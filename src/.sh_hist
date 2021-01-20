@@ -1,0 +1,24 @@
+help
+cat .sh_list
+cat .sh_hist
+exit
+help
+exit
+exit
+help
+ls
+help
+ls
+exit
+exit
+ls
+sleep 2
+sleep 5
+cat shell.c
+cat shell.c > new.txt
+clear
+exit
+ls
+ls
+ls -a
+
