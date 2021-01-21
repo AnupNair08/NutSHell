@@ -13,7 +13,7 @@
 char *cwd;
 command c;
 int hist;
-command cmdList[128];
+// command cmdList[128];
 
 void handleexit(){
 	printf("\nExiting...\n");
@@ -22,13 +22,9 @@ void handleexit(){
 }
 
 
-
+///
 ///  @brief Function that generates the prompt to be displayed on the shell
-///
-///
-///   @return Structure that contains the username and the current working directory
-///
-///
+///  @return Structure that contains the username and the current working directory
 prompt getPrompt(){
 	prompt p;
 	p.wd = (char *)malloc(sizeof(char) * MAX_SIZE);
@@ -41,25 +37,37 @@ prompt getPrompt(){
 }
 
 
+/// @brief Utility Function to print colored text
+/// @param name hostname cwd
+void printPrompt(char *name, char *hostname, char *cwd){
+	printf("\033[1;31m");
+	printf("%s@", name);
+	printf("%s ", hostname);
+	printf("\x1B[34m");
+	printf("%s: $ ",cwd);
+	printf("\033[0m");
+	return;
+}
+
 
 ///  @brief Function to parse the input command and process it for the shell.
 ///
 ///  @param cmd String that has been input by the user into the shell
 /// 
-///  @return Pointer to a structure that holds the commands and the list of arguments passed to them or NULL in case of a built in command
+///  @return Pointer to a structure that holds the commands and the list of args passed to them or NULL in case of a built in command
 /// 
-command* parse(char *cmd){
+command* parseOld(char *cmd){
 	int i = 0;
 	char *tok = (char *)malloc(sizeof(char) * MAX_SIZE);
 	command *c = (command *)malloc(sizeof(command));
 	tok = strtok(cmd, "\n");
 	tok = strtok(tok, " ");
-	c->comd = tok;
+	c->cmd = tok;
 	c->size = 0;
-	c->arguments = (char **)malloc(sizeof(char *) * MAX_SIZE/4);
-	c->arguments[0] = (char *)malloc(sizeof(char) * MAX_SIZE);
-	c->arguments[0] = "";
-	// Tokenise the arguments list
+	c->args = (char **)malloc(sizeof(char *) * MAX_SIZE/4);
+	c->args[0] = (char *)malloc(sizeof(char) * MAX_SIZE);
+	c->args[0] = "";
+	// Tokenise the args list
 	while(tok) {
 		tok = strtok(NULL," ");	
 		if(tok == NULL){
@@ -69,30 +77,29 @@ command* parse(char *cmd){
 			c->background = 1;
 			break;
 		}
-		c->arguments[i] = (char *)malloc(sizeof(char) * MAX_SIZE);
-		c->arguments[i] = tok;
-		puts(c->arguments[i]);
+		c->args[i] = (char *)malloc(sizeof(char) * MAX_SIZE);
+		c->args[i] = tok;
 		c->size++;
 		i++;
 	}
 
 	// Built in commands
-	if (strcmp(c->comd,"exit") == 0) {
+	if (strcmp(c->cmd,"exit") == 0) {
 	//	printf("I will be Bourne Again.\n");
 		close(hist);
 		exit(0);
 	}
-	else if (strcmp(c->comd,"help") == 0) {
+	else if (strcmp(c->cmd,"help") == 0) {
 		printf("Help from the shell\n");
-		free(c->arguments);
+		free(c->args);
 		return NULL;
 	}
-	else if (strcmp(c->comd,"cd") == 0) {
-		c->arguments[0] = strcmp(c->arguments[0],"") != 0 ? c->arguments[0] : getenv("HOME");
-		if (chdir(c->arguments[0]) == 0){
+	else if (strcmp(c->cmd,"cd") == 0) {
+		c->args[0] = strcmp(c->args[0],"") != 0 ? c->args[0] : getenv("HOME");
+		if (chdir(c->args[0]) == 0){
 			prompt newPrompt = getPrompt();
 			cwd = newPrompt.wd;
-			free(c->arguments);
+			free(c->args);
 			return NULL;
 		}
 		else{
@@ -107,36 +114,7 @@ command* parse(char *cmd){
 
 
 
-void parseHelper(char *cmd){
-	char *tok = (char *)malloc(128);
-	char *cmdSeg = (char *)malloc(128);
-	tok = strtok(cmd,"\n");
-	tok = strtok(cmd," ");
-	while(tok) {
-		puts(tok);
-		if(strcmp(tok,"|") == 0){
-			parse(cmdSeg);
-			cmdSeg = "";
-		}
-		strcat(cmdSeg,tok);
-		strcat(cmdSeg," ");
-		tok = strtok(NULL," ");
-	}
-	if(strlen(cmdSeg) != 0){
-		parse(cmdSeg);
-	}
 
-
-}
-
-void printPrompt(char *name, char *hostname, char *cwd){
-	printf("\033[1;31m");
-	printf("%s@", name);
-	printf("%s ", hostname);
-	printf("\x1B[34m");
-	printf("%s: $ ",cwd);
-	printf("\033[0m");
-}
 
 /// 
 /// @brief Function to run the shell loop that forks new processes and invokes the exec system call to execute commands
@@ -146,10 +124,10 @@ void printPrompt(char *name, char *hostname, char *cwd){
 /// @return void
 ///
 void startShell(prompt p){
-	hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
-	if(hist == -1){
-		perror("History feature startup failed\n");
-	}
+	// hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
+	// if(hist == -1){
+	// 	perror("History feature startup failed\n");
+	// }
 	cwd = p.wd;
 	int pid;
 	char *cmd = (char *)malloc(sizeof(char) * CMD_SIZE);
@@ -163,7 +141,13 @@ void startShell(prompt p){
 			continue;
 		}	
 	//	write(hist,cmd,strlen(cmd));
-		command *parsedCmd = parse(cmd);
+		cmdList *cl = getParsed(strtok(cmd,"\n"));
+		// command *parsedCmd = parseOld(cmd);
+		command *parsedCmd = NULL;
+		if (cl->commandSize == 1){
+			parsedCmd = &(cl->commandList[0]);
+		}
+		// printParsed();
 		if(parsedCmd == NULL){
 			continue;
 		}
@@ -177,12 +161,12 @@ void startShell(prompt p){
 		}
 		if(pid == 0){  
 			char *arg[parsedCmd->size + 2];
-			arg[0] = parsedCmd->comd;
+			arg[0] = parsedCmd->cmd;
 			for(int i = 0 ; i < parsedCmd->size ; i++){
-				arg[i+1] = parsedCmd->arguments[i];
+				arg[i+1] = parsedCmd->args[i];
 			}
 			arg[parsedCmd->size + 1] = 0;
-			if(execvp(parsedCmd->comd,arg) == -1){
+			if(execvp(parsedCmd->cmd,arg) == -1){
 				perror("");
 				// Including this exit cleanly exits out of a process that ended up in an error, thus not causing the exit loops
 				exit(-1);

@@ -2,12 +2,14 @@
 #shell.c --> format.c      invoked via format.h
 #	--> utility.c	  invoked via  utility.h
 
-dnsh: shell.o utility.o 
-	gcc shell.o utility.o  -o dnsh
+dnsh: shell.o utility.o command.o
+	gcc shell.o utility.o command.o -o dnsh
 
 shell.o: shell.c  utility.h
 	gcc -c shell.c
 
+command.o: command.c shell.h
+	gcc -c command.c
 
 utility.o: utility.c
 	gcc -c utility.c

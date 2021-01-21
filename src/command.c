@@ -1,5 +1,5 @@
 #include<stdio.h>
-#include"command.h"
+#include"shell.h"
 #include<stdlib.h>
 #include<string.h>
 #include<unistd.h>
@@ -76,22 +76,38 @@ char* parse(char *cmd, int start, int end){
 
 }
 
+void printParsed(){
+    for(int i = 0 ; i < commandSize ; i++){
+        printCommand(&commandList[i]);
+        if(i > 0){
+            printf("%c\n",spcOps[i - 1]);
+        }
+    }
+}
+
+
+cmdList *getParsed(char *cmd){
+    cmdList *t = (cmdList *) malloc (sizeof(cmdList)); 
+    commandSize = 0;
+    spcSize = 0;
+    parse(cmd,0,strlen(cmd) + 1);
+    t->commandList = commandList;
+    t->commandSize = commandSize;
+    t->spcOps = spcOps;
+    t->spcSize = spcSize;
+    return t;
+}
 
 
 
-int main(){
+int caller(){
     char whitespace[] = " \t\r\n\v";
     char symbols[] = "<|>&";
     
     char cmd[] = "ls -l file xyz | sort <pwd.txt | grep pattern";
     parse(cmd,0,strlen(cmd) + 1);
 
-    // for(int i = 0 ; i < commandSize ; i++){
-    //     printCommand(&commandList[i]);
-    //     if(i > 0){
-    //         printf("%c\n",spcOps[i - 1]);
-    //     }
-    // }
+    
     int fd;
     for(int i = 0, j = 1 ; i < spcSize ; i++, j++){
             switch(spcOps[i]){
