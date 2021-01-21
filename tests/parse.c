@@ -24,7 +24,6 @@ void parse(char *cmd, int start, int end){
 		for(int i = start ; i < end ; i++){
 			part[k++] = cmd[i];
 		}
-		cmdlist[j++] = part;
 		printf("\n");
 		return;
 	}
