@@ -7,13 +7,19 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-/// @brief CommandList Array to store all the parsed commands
+/// @brief Array to store all the parsed commands.
 command commandList[64];
 int commandSize;
 
+/**
+ * @brief Array to store all the special operators.
+ */
 char spcOps[32];
 int spcSize;
 
+
+/// @brief Utility function to print the command
+/// @param c Pointer to command that is to be printed
 void printCommand(command *c){
     printf("Command : %s\n",c->cmd);
     printf("Arguments: ");
@@ -25,7 +31,8 @@ void printCommand(command *c){
 }
 
 /// @brief Function to parse a single command with arguments
-/// @return Pointer to a command
+/// @param cmd String that is to be parsed
+/// @return Pointer to a parsed command 
 command *parseOne(char *cmd){
     command *c = (command *)malloc(sizeof(command));
     c->args = (char **)malloc(sizeof(char *));
@@ -54,8 +61,11 @@ command *parseOne(char *cmd){
     return c;
 }
 
-/// @brief Function to parse an commands recursively
-/// @return Parsed command
+/// @brief Function to parse commands based on tokens
+/// @param cmd User input on commandline
+/// @param start Starting index of the string
+/// @param end Ending index of the string
+/// @return Tokens based on special operators
 char* parse(char *cmd, int start, int end){
     static int j = 0;
 	int index = start;
@@ -83,6 +93,10 @@ char* parse(char *cmd, int start, int end){
 
 }
 
+/**
+ * @brief Function to print the array of parsed commands
+ * 
+ */
 void printParsed(){
     for(int i = 0 ; i < commandSize ; i++){
         printCommand(&commandList[i]);
@@ -90,9 +104,15 @@ void printParsed(){
             printf("%c\n",spcOps[i - 1]);
         }
     }
+    return;
 }
 
-
+/**
+ * @brief Generates an array of commands and special characters 
+ * 
+ * @param cmd String of command
+ * @return Array of parsed commands alongwith special operators 
+ */
 cmdList *getParsed(char *cmd){
     cmdList *t = (cmdList *) malloc (sizeof(cmdList)); 
     commandSize = 0;

@@ -10,11 +10,14 @@
 #define CMD_SIZE 128
 #define MAX_SIZE 128
 
+/// @brief Global pointer to store the current working directory
 char *cwd;
-command c;
 int hist;
-// command cmdList[128];
 
+/**
+ * @brief Function to handle Ctrl+C
+ * 
+ */
 void handleexit(){
 	printf("\nExiting...\n");
 	close(hist);
@@ -37,8 +40,13 @@ prompt getPrompt(){
 }
 
 
-/// @brief Utility Function to print colored text
-/// @param name hostname cwd
+/**
+ * @brief Utility function to print colored text on terminal
+ * 
+ * @param name Username of the system
+ * @param hostname Hostname of the system
+ * @param cwd Current working directory
+ */
 void printPrompt(char *name, char *hostname, char *cwd){
 	printf("\033[1;31m");
 	printf("%s@", name);
@@ -51,44 +59,11 @@ void printPrompt(char *name, char *hostname, char *cwd){
 }
 
 
-// ///  @brief Function to parse the input command and process it for the shell.
-// ///
-// ///  @param cmd String that has been input by the user into the shell
-// /// 
-// ///  @return Pointer to a structure that holds the commands and the list of args passed to them or NULL in case of a built in command
-// /// 
-// command* parseOld(char *cmd){
-// 	int i = 0;
-// 	char *tok = (char *)malloc(sizeof(char) * MAX_SIZE);
-// 	command *c = (command *)malloc(sizeof(command));
-// 	tok = strtok(cmd, "\n");
-// 	tok = strtok(tok, " ");
-// 	c->cmd = tok;
-// 	c->size = 0;
-// 	c->args = (char **)malloc(sizeof(char *) * MAX_SIZE/4);
-// 	c->args[0] = (char *)malloc(sizeof(char) * MAX_SIZE);
-// 	c->args[0] = "";
-// 	// Tokenise the args list
-// 	while(tok) {
-// 		tok = strtok(NULL," ");	
-// 		if(tok == NULL){
-// 			break;
-// 		}
-// 		if(strcmp(tok,"&") == 0){
-// 			c->background = 1;
-// 			break;
-// 		}
-// 		c->args[i] = (char *)malloc(sizeof(char) * MAX_SIZE);
-// 		c->args[i] = tok;
-// 		c->size++;
-// 		i++;
-// 	}
-
-// 	// Built in commands
-	
-// 	return c;
-// }
-
+/**
+ * @brief Function to execute a single command 
+ * 
+ * @param p Pointer to the command to be executed
+ */
 void runCmd(command *p){
 	int pid = fork();
 	if(pid < 0) {
@@ -114,7 +89,13 @@ void runCmd(command *p){
 	return;
 }
 
-
+/**
+ * @brief Runs commands that have redirection of I/O
+ * 
+ * @param p Pointer to command to be executed 
+ * @param fileName Name of the file to be used as I/O
+ * @param type String denoting the type of redirection
+ */
 void runRedirCmd(command *p, char *fileName, char *type){
 	int fd;
 	if(type == "out"){
@@ -147,7 +128,6 @@ void runRedirCmd(command *p, char *fileName, char *type){
 		}
 		if(execvp(p->cmd,arg) == -1){
 			perror("");
-			// Including this exit cleanly exits out of a process that ended up in an error, thus not causing the exit loops
 			exit(-1);
 		}
 		close(fd);
@@ -158,6 +138,12 @@ void runRedirCmd(command *p, char *fileName, char *type){
 	return;
 }
 
+/**
+ * @brief Runs piped commands
+ * 
+ * @param l Pointer to the left command
+ * @param right Pointer to the right command
+ */
 void runPipe(command *l, command *right){
 	// prog 1 | prog2
 	// prog1 writes to stdout which can be linked to a pipefd1
@@ -204,7 +190,6 @@ void runPipe(command *l, command *right){
 			arg[l->size + 1] = 0;
 			if(execvp(l->cmd,arg) == -1){
 				perror("");
-				// Including this exit cleanly exits out of a process that ended up in an error, thus not causing the exit loops
 				exit(-1);
 			}
 		}
@@ -221,7 +206,6 @@ void runPipe(command *l, command *right){
 			arg[right->size + 1] = 0;
 			if(execvp(right->cmd,arg) == -1){
 				perror("");
-				// Including this exit cleanly exits out of a process that ended up in an error, thus not causing the exit loops
 				exit(-1);
 			}
 			wait(NULL);
@@ -240,9 +224,7 @@ void runPipe(command *l, command *right){
 /// 
 /// @brief Function to run the shell loop that forks new processes and invokes the exec system call to execute commands
 ///
-/// @param userVal Global variable that holds the username cwdVal Global Variable that holds the current working directory
-///
-/// @return void
+/// @param p Prompt structure to be printed on the terminal
 ///
 void startShell(prompt p){
 	// hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
@@ -334,9 +316,6 @@ int main(int argc, char *argv[]){
 	prompt p = getPrompt();
 	//doubleStack* hist = readHistory();
 	startShell(p);
-	/*char buf[128];*/
-	/*fgets(buf,128,stdin);*/
-	/*parseHelper(buf);*/
 	return 0;
 }
 
