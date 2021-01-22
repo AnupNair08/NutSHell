@@ -115,7 +115,18 @@ void runCmd(command *p){
 }
 
 
-void runRedirCmd(command *p, int fd, char *type){
+void runRedirCmd(command *p, char *fileName, char *type){
+	int fd;
+	if(type == "out"){
+		fd = open(fileName, O_CREAT | O_RDWR);
+	}
+	else{
+		fd = open(fileName, O_RDONLY);
+	}
+	if(fd == -1){
+		perror("");
+		return;
+	}
 	int pid = fork();
 	if(pid < 0) {
 		perror("");
@@ -142,6 +153,83 @@ void runRedirCmd(command *p, int fd, char *type){
 		close(fd);
 	}
 	else{
+		wait(NULL);
+	}
+	return;
+}
+
+void runPipe(command *l, command *right){
+	// prog 1 | prog2
+	// prog1 writes to stdout which can be linked to a pipefd1
+	// prog2 reads from stdin which can be linked tp pipefd0
+	
+	/*parent writes to fd1 and child reads from fd0*/
+	/*parent closes the read end and child closes the write end*/
+	
+	//we have a pipe made such that fd[1] stdout --- stdin fd[0]
+
+	//			       --> read its inp from stdin fd[0]
+	//			       |
+	//	parent --> prog1 --> prog2
+	//		    |
+	//		    -> writes its op to stdout fd[1]
+	
+	char buf[10];
+	int pidfd[2];
+	int pid = fork();
+	int r=pipe(pidfd);
+	if(r < 0){
+		perror("");
+		exit(1);
+	}
+	if(pid == -1){
+		perror("");
+		exit(1);
+	}
+	//child 1
+	if(pid == 0){
+		int pid2 = fork();
+		//child of child 1
+		//executes prog1
+		if(pid2 == 0){
+			close(pidfd[0]);
+			dup2(pidfd[1],1);
+			close(pidfd[1]);
+			
+			char *arg[l->size + 2];
+			arg[0] = l->cmd;
+			for(int i = 0 ; i < l->size ; i++){
+				arg[i+1] = l->args[i];
+			}
+			arg[l->size + 1] = 0;
+			if(execvp(l->cmd,arg) == -1){
+				perror("");
+				// Including this exit cleanly exits out of a process that ended up in an error, thus not causing the exit loops
+				exit(-1);
+			}
+		}
+		//parent of child 2 i.e child 1 executes prog2
+		else{
+			close(pidfd[1]);
+			dup2(pidfd[0],0);
+			close(pidfd[0]);
+			char *arg[right->size + 2];
+			arg[0] = right->cmd;
+			for(int i = 0 ; i < right->size ; i++){
+				arg[i+1] = right->args[i];
+			}
+			arg[right->size + 1] = 0;
+			if(execvp(right->cmd,arg) == -1){
+				perror("");
+				// Including this exit cleanly exits out of a process that ended up in an error, thus not causing the exit loops
+				exit(-1);
+			}
+			wait(NULL);
+		}
+	}
+	if(pid){
+		close(pidfd[0]);
+		close(pidfd[1]);
 		wait(NULL);
 	}
 	return;
@@ -186,16 +274,13 @@ void startShell(prompt p){
 			for(int i = 0 ; i < cl->spcSize ; i++){
 				switch(cl->spcOps[i]){
 					case '>':
-						fd = open(cl->commandList[i + 1].cmd, O_CREAT | O_RDWR);
-						runRedirCmd(&(cl->commandList[i]),fd,"out");
+						runRedirCmd(&(cl->commandList[i]),cl->commandList[i + 1].cmd,"out");
 						break;
 					case '<':
-						fd = open(cl->commandList[i + 1].cmd, O_RDONLY);
-						if(fd == -1){
-							perror("");
-							break;
-						}
-						runRedirCmd(&(cl->commandList[i]),fd,"in");
+						runRedirCmd(&(cl->commandList[i]),cl->commandList[i+1].cmd,"in");
+						break;
+					case '|':
+						runPipe(&(cl->commandList[i]),&(cl->commandList[i+1]));
 						break;
 					default:
 						break;
@@ -237,27 +322,6 @@ void startShell(prompt p){
 				}
 				continue;
 		}
-		// pid = fork();
-		// if(pid < 0) {
-		// 	perror("");
-		// 	exit(-1);
-		// }
-		// if(pid == 0){  
-		// 	char *arg[parsedCmd->size + 2];
-		// 	arg[0] = parsedCmd->cmd;
-		// 	for(int i = 0 ; i < parsedCmd->size ; i++){
-		// 		arg[i+1] = parsedCmd->args[i];
-		// 	}
-		// 	arg[parsedCmd->size + 1] = 0;
-		// 	if(execvp(parsedCmd->cmd,arg) == -1){
-		// 		perror("");
-		// 		// Including this exit cleanly exits out of a process that ended up in an error, thus not causing the exit loops
-		// 		exit(-1);
-		// 	}
-		// }
-		// else{
-		// 	wait(NULL);
-		// }
 		runCmd(parsedCmd);
 	}
 	

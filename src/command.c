@@ -68,7 +68,7 @@ char* parse(char *cmd, int start, int end){
 		}
 	}
 	if(index != start) {
-		char *left = parse(cmd, start, index-1);
+		char *left = parse(cmd, start, index);
 		char *right = parse(cmd,index+1,end);
 	}
 	else{
