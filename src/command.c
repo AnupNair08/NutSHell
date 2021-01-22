@@ -20,6 +20,7 @@ void printCommand(command *c){
     for(int i = 0 ; i < c->size; i++){
         printf("%s ",c->args[i]);
     }
+    printf("\nBuilt in command ? : %d\n", c->isBuiltin);
     puts("\n-------------------------");
 }
 
@@ -31,6 +32,12 @@ command *parseOne(char *cmd){
 	char *tok = (char *)malloc(sizeof(char) * 128);
     tok = strtok(cmd," ");
     c->cmd = tok;
+    if(strcmp(c->cmd,"exit") == 0 || strcmp(c->cmd, "cd") == 0 || strcmp(c->cmd, "help") == 0 || strcmp(c->cmd,"fg") == 0 || strcmp(c->cmd,"bg") == 0){
+        c->isBuiltin = 1;
+    }
+    else{
+        c->isBuiltin = 0;
+    }
     int i = 0;
     while(tok){
         tok = strtok(NULL, " ");
