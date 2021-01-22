@@ -247,6 +247,11 @@ void startShell(prompt p){
 		//write(hist,cmd,strlen(cmd));
 		parsedCmd = NULL;
 		cmdList *cl = getParsed(strtok(cmd,"\n"));
+		// printf("%d %d",cl->commandSize, cl->spcSize);
+		if(cl->commandSize != cl->spcSize + 1){
+			fprintf(stdout,"Parse error: Unexpected syntax\n");
+			continue;
+		}
 		// Handle only single command with arguments
 		if (cl->commandSize == 1){
 			parsedCmd = &(cl->commandList[0]);

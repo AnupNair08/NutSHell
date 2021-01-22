@@ -87,7 +87,9 @@ char* parse(char *cmd, int start, int end){
 		for(int i = start ; i < end ; i++){
 			part[k++] = cmd[i];
 		}
-        parseOne(part);
+        if(strlen(part) > 0){
+            parseOne(part);
+        }
         return part;
 	}
 
