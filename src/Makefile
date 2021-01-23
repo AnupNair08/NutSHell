@@ -2,8 +2,11 @@
 #shell.c --> format.c      invoked via format.h
 #	--> utility.c	  invoked via  utility.h
 
-dnsh: shell.o utility.o command.o
-	gcc shell.o utility.o command.o -o dnsh
+dnsh: shell.o utility.o command.o jobs.o
+	gcc shell.o utility.o command.o jobs.o -o dnsh
+
+jobs.o: jobs.c shell.h
+	gcc -c jobs.c
 
 shell.o: shell.c  utility.h
 	gcc -c shell.c

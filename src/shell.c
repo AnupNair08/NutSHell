@@ -16,46 +16,8 @@
 char *cwd;
 int hist;
 int fd;
-
-/**
- * @brief Function to handle Ctrl+C
- * 
- */
-void handleexit(){
-	printf("\nExiting...\n");
-	close(hist);
-	exit(0);
-}
-
-void handlestop(){
-	printf("Stopping process\n");
-}
-/**
- * @brief Initialises the shell and makes it run as foreground process.
- *  	  Gets process id of the shell and sets the process group id equal to it
- * 		  Gives the control of the terminal to the process group id  
- * 
- */
-void initShell(){
-	// Get default terminal
-	char *term = (char *)malloc(128);
-    ctermid(term);
-    fd = open(term,O_RDONLY);
-	// Ignore signals on the foreground processes  
-	signal (SIGINT, SIG_IGN);
-	signal (SIGTSTP, SIG_IGN);
-	signal (SIGTTOU, SIG_IGN);
-	signal (SIGCHLD, SIG_IGN);
-
-	// Get the process id of the shell's main process
-	int shellpid = getpid();
-	// Set the shell process as the group leader
-	setpgid(shellpid, shellpid);
-	// Transfer the control to the shell
-	tcsetpgrp(fd,shellpid);
-	return;
-}
-
+/// @brief List to store the jobs for processing bg and fg operations
+jobList *jobs;
 
 ///
 ///  @brief Function that generates the prompt to be displayed on the shell
@@ -92,12 +54,52 @@ void printPrompt(char *name, char *hostname, char *cwd){
 
 
 /**
+ * @brief Signal handler to set completed background process status as done.
+ * 
+ */
+void handleChild(){
+	pid_t childpid = wait(NULL);
+	// printf("parent alerted %d\n",childpid);
+	setStatus(jobs,childpid,4);
+	return;
+}
+
+/**
+ * @brief Initialises the shell and makes it run as foreground process.
+ *  	  Gets process id of the shell and sets the process group id equal to it
+ * 		  Gives the control of the terminal to the process group id  
+ * 
+ */
+void initShell(){
+	// Get default terminal
+	char *term = (char *)malloc(128);
+    ctermid(term);
+    fd = open(term,O_RDONLY);
+	// Ignore signals on the foreground processes  
+	signal (SIGINT, SIG_IGN);
+	signal (SIGTSTP, SIG_IGN);
+	signal (SIGTTOU, SIG_IGN);
+	signal (SIGCHLD, handleChild);
+
+	// Get the process id of the shell's main process
+	int shellpid = getpid();
+	// Set the shell process as the group leader
+	setpgid(shellpid, shellpid);
+	// Transfer the control to the shell
+	tcsetpgrp(fd,shellpid);
+	return;
+}
+
+
+
+/**
  * @brief Function to execute a single command 
  * 
- * @param p Pointer to the command to be executed
+ * @param cl Pointer to the command list
  */
-void runCmd(command *p){
-	int pid = fork();
+void runCmd(cmdList *cl){
+	command *p = &(cl->commandList[0]);
+	pid_t pid = fork();
 	if(pid < 0) {
 		perror("");
 		exit(-1);
@@ -116,7 +118,6 @@ void runCmd(command *p){
 			signal (SIGTSTP, SIG_DFL);
 			signal (SIGTTOU, SIG_DFL);	
 		}
-
 		char *arg[p->size + 2];
 		arg[0] = p->cmd;
 		for(int i = 0 ; i < p->size ; i++){
@@ -130,14 +131,16 @@ void runCmd(command *p){
 		}
 	}
 	else{
-		// Run background processes with WNOHANG as it does not wait for the child process to exit
 		int status;
-		setpgid(pid,getpgid(getpid()));
 		if (p->isBackground){
+		// Run background processes with WNOHANG as it does not wait for the child process to exit
+			addJob(jobs,pid,cl,BACKGROUND);
 			waitpid(pid,&status, WNOHANG);
 		}
 		else{
+			addJob(jobs,pid,cl,FOREGROUND);
 			waitpid(pid,&status,0);
+			setStatus(jobs,pid,DONE);
 		}
 	}
 	return;
@@ -391,9 +394,13 @@ void startShell(prompt p, doubleStack *h){
 					free(buf);
 					close(fd);				
 				}
+				else if (strcmp(parsedCmd->cmd,"jobs") == 0){
+					freeJobs(jobs);
+				}
 				continue;
 		}
-		runCmd(parsedCmd);
+		runCmd(cl);
+		
 	}
 	
 	return;
@@ -401,6 +408,7 @@ void startShell(prompt p, doubleStack *h){
 
 int main(int argc, char *argv[]){
 	initShell();
+	jobs = initJobList();
 	printf("Welcome to Dead Never SHell(DNSh).\n");
 	prompt p = getPrompt();
 	doubleStack* h = readHistory();
