@@ -35,6 +35,7 @@ void printCommand(command *c){
 /// @return Pointer to a parsed command 
 command *parseOne(char *cmd){
     command *c = (command *)malloc(sizeof(command));
+    c->isBackground = 0;
     c->args = (char **)malloc(sizeof(char *));
 	char *tok = (char *)malloc(sizeof(char) * 128);
     tok = strtok(cmd," ");

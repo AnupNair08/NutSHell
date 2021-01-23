@@ -15,6 +15,7 @@
 /// @brief Global pointer to store the current working directory
 char *cwd;
 int hist;
+int fd;
 
 /**
  * @brief Function to handle Ctrl+C
@@ -28,6 +29,31 @@ void handleexit(){
 
 void handlestop(){
 	printf("Stopping process\n");
+}
+/**
+ * @brief Initialises the shell and makes it run as foreground process.
+ *  	  Gets process id of the shell and sets the process group id equal to it
+ * 		  Gives the control of the terminal to the process group id  
+ * 
+ */
+void initShell(){
+	// Get default terminal
+	char *term = (char *)malloc(128);
+    ctermid(term);
+    fd = open(term,O_RDONLY);
+	// Ignore signals on the foreground processes  
+	signal (SIGINT, SIG_IGN);
+	signal (SIGTSTP, SIG_IGN);
+	signal (SIGTTOU, SIG_IGN);
+	signal (SIGCHLD, SIG_IGN);
+
+	// Get the process id of the shell's main process
+	int shellpid = getpid();
+	// Set the shell process as the group leader
+	setpgid(shellpid, shellpid);
+	// Transfer the control to the shell
+	tcsetpgrp(fd,shellpid);
+	return;
 }
 
 
@@ -71,15 +97,26 @@ void printPrompt(char *name, char *hostname, char *cwd){
  * @param p Pointer to the command to be executed
  */
 void runCmd(command *p){
-	
 	int pid = fork();
 	if(pid < 0) {
 		perror("");
 		exit(-1);
 	}
 	if(pid == 0){  
-		signal(SIGQUIT,handleexit);
-		signal(SIGSTOP,handlestop);
+		// Get the child's process id and make it the group leader if there is none
+		int childpid = getpid();
+		if (getpgid(childpid) == 0){
+			setpgid(childpid,childpid);
+		}
+		// Takes signals from the terminal if it is a foreground process
+		if(!p->isBackground){
+			tcsetpgrp(fd,getpgid(childpid));
+			signal (SIGINT, SIG_DFL);
+			signal (SIGQUIT, SIG_DFL);
+			signal (SIGTSTP, SIG_DFL);
+			signal (SIGTTOU, SIG_DFL);	
+		}
+
 		char *arg[p->size + 2];
 		arg[0] = p->cmd;
 		for(int i = 0 ; i < p->size ; i++){
@@ -94,12 +131,13 @@ void runCmd(command *p){
 	}
 	else{
 		// Run background processes with WNOHANG as it does not wait for the child process to exit
+		int status;
+		setpgid(pid,getpgid(getpid()));
 		if (p->isBackground){
-			int status;
 			waitpid(pid,&status, WNOHANG);
 		}
 		else{
-			wait(NULL);
+			waitpid(pid,&status,0);
 		}
 	}
 	return;
@@ -362,8 +400,7 @@ void startShell(prompt p, doubleStack *h){
 }
 
 int main(int argc, char *argv[]){
-	signal(SIGQUIT,handleexit);
-	signal(SIGSTOP,handlestop);
+	initShell();
 	printf("Welcome to Dead Never SHell(DNSh).\n");
 	prompt p = getPrompt();
 	doubleStack* h = readHistory();
