@@ -39,7 +39,7 @@ command *parseOne(char *cmd){
 	char *tok = (char *)malloc(sizeof(char) * 128);
     tok = strtok(cmd," ");
     c->cmd = tok;
-    if(strcmp(c->cmd,"exit") == 0 || strcmp(c->cmd, "cd") == 0 || strcmp(c->cmd, "help") == 0 || strcmp(c->cmd,"fg") == 0 || strcmp(c->cmd,"bg") == 0){
+    if(strcmp(c->cmd,"exit") == 0 || strcmp(c->cmd, "cd") == 0 || strcmp(c->cmd, "help") == 0 || strcmp(c->cmd,"fg") == 0 || strcmp(c->cmd,"bg") == 0 || strcmp(c->cmd,"history") == 0){
         c->isBuiltin = 1;
     }
     else{
@@ -50,6 +50,10 @@ command *parseOne(char *cmd){
         tok = strtok(NULL, " ");
         if(tok == NULL){
             break;
+        }
+        if(strcmp(tok,"&") == 0){
+            c->isBackground = 1;
+            continue;
         }
         // puts(tok);
         c->args[i] = (char *)malloc(sizeof(char) * 128);

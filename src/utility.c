@@ -38,10 +38,14 @@ void push(stack *s, char *val){
 	return;
 }
 
+void printStack(stack *s){
+	puts(s->top->comd);
+}
+
 char *pop(stack *s){
 	if(s->size == 0) {
 		return NULL;
-	}
+	} 
 	char *temp = (char *)malloc(128);
 	temp = s->top->comd;
 	stackNode *p = s->head;
@@ -69,34 +73,10 @@ doubleStack *readHistory(){
 		tok = strtok(NULL, "\n");
 		
 	}
+	close(h);
 	return history;
-}
-
-char* handleArrowUp(doubleStack *history){
-	char *c	= pop(history->s1);
-	if(c == NULL){
-		return NULL;
-	}
-	push(history->s2,c);
-	return c;
-}
-char* handleArrowDown(doubleStack *history){
-	char *c	= pop(history->s2);
-	if(c == NULL ){
-		return NULL;
-	}
-	push(history->s1,c);
-	return c;
 }
 
 void printHelp(){
 	printf("Author: Anup N\n");
 }
-
-/*int main(){*/
-	/*doubleStack *history = readHistory();*/
-	/*puts(handleArrowUp(history));*/
-	/*puts(handleArrowUp(history));*/
-	/*puts(handleArrowDown(history));*/
-	/*puts(handleArrowDown(history));*/
-/*}*/

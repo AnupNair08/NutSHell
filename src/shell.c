@@ -2,11 +2,13 @@
 #include<unistd.h>
 #include<fcntl.h>
 #include<sys/wait.h>
+#include<sys/stat.h>
 #include<stdlib.h>
 #include<string.h>
 #include<errno.h>
 #include<signal.h>
 #include "shell.h"
+#include"utility.h"
 #define CMD_SIZE 128
 #define MAX_SIZE 128
 
@@ -22,6 +24,10 @@ void handleexit(){
 	printf("\nExiting...\n");
 	close(hist);
 	exit(0);
+}
+
+void handlestop(){
+	printf("Stopping process\n");
 }
 
 
@@ -65,12 +71,15 @@ void printPrompt(char *name, char *hostname, char *cwd){
  * @param p Pointer to the command to be executed
  */
 void runCmd(command *p){
+	
 	int pid = fork();
 	if(pid < 0) {
 		perror("");
 		exit(-1);
 	}
 	if(pid == 0){  
+		signal(SIGQUIT,handleexit);
+		signal(SIGSTOP,handlestop);
 		char *arg[p->size + 2];
 		arg[0] = p->cmd;
 		for(int i = 0 ; i < p->size ; i++){
@@ -84,7 +93,14 @@ void runCmd(command *p){
 		}
 	}
 	else{
-		wait(NULL);
+		// Run background processes with WNOHANG as it does not wait for the child process to exit
+		if (p->isBackground){
+			int status;
+			waitpid(pid,&status, WNOHANG);
+		}
+		else{
+			wait(NULL);
+		}
 	}
 	return;
 }
@@ -226,7 +242,7 @@ void runPipe(command *l, command *right){
 ///
 /// @param p Prompt structure to be printed on the terminal
 ///
-void startShell(prompt p){
+void startShell(prompt p, doubleStack *h){
 	// hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
 	// if(hist == -1){
 	// 	perror("History feature startup failed\n");
@@ -240,16 +256,34 @@ void startShell(prompt p){
 	  	printPrompt(p.uname, p.hostname, cwd);
 		
 		fgets(cmd,MAX_SIZE,stdin);
+		char *buf;
+		
 		// Empty input handler
 		if(strcmp(cmd,"\n") == 0 || strlen(cmd) == 0){
-			continue;
-		}	
-		//write(hist,cmd,strlen(cmd));
+			continue;	
+		}
+		// History WIP	
+		// if(strcmp(cmd,"!!\n") == 0){
+		// 	// buf = handleArrowUp(h);
+		// 	buf = pop(h->s1);
+		// 	if(buf == NULL || strcmp(buf,"") == 0){
+		// 		fprintf(stderr,"No history stored\n");
+		// 		continue;
+		// 	}
+		// 	cmd = buf;
+		// 	printPrompt(p.uname, p.hostname, cwd);
+		// 	printf("%s", cmd);
+		// }
+		// else{
+		// 	write(hist,cmd,strlen(cmd));
+		// 	push(h->s1,cmd);
+		// }
+
 		parsedCmd = NULL;
 		cmdList *cl = getParsed(strtok(cmd,"\n"));
 		// printf("%d %d",cl->commandSize, cl->spcSize);
 		if(cl->commandSize != cl->spcSize + 1){
-			fprintf(stdout,"Parse error: Unexpected syntax\n");
+			fprintf(stderr,"Parse error: Unexpected syntax\n");
 			continue;
 		}
 		// Handle only single command with arguments
@@ -283,12 +317,13 @@ void startShell(prompt p){
 		}
 		
 		
-		if(parsedCmd->background){
-			printf("BG PROCESS");
-		}
+		// if(parsedCmd->background){
+		// 	printf("BG PROCESS");
+		// }
 		if(parsedCmd->isBuiltin){
 				if (strcmp(parsedCmd->cmd,"exit") == 0) {
 				//	printf("I will be Bourne Again.\n");
+					close(hist);
 					exit(0);
 				}
 				else if (strcmp(parsedCmd->cmd,"help") == 0) {
@@ -307,6 +342,17 @@ void startShell(prompt p){
 						perror("");
 					}
 				}
+				else if (strcmp(parsedCmd->cmd,"history") == 0){
+					printf("Shell History:\n");
+					int fd = open(".sh_hist", O_RDONLY);
+					struct stat s;
+					stat(".sh_hist",&s);
+					char *buf = (char *)malloc(sizeof(char)*s.st_size);
+					read(fd,buf,s.st_size);
+					printf("%s", buf);
+					free(buf);
+					close(fd);				
+				}
 				continue;
 		}
 		runCmd(parsedCmd);
@@ -316,11 +362,12 @@ void startShell(prompt p){
 }
 
 int main(int argc, char *argv[]){
-	signal(SIGINT,handleexit);
+	signal(SIGQUIT,handleexit);
+	signal(SIGSTOP,handlestop);
 	printf("Welcome to Dead Never SHell(DNSh).\n");
 	prompt p = getPrompt();
-	//doubleStack* hist = readHistory();
-	startShell(p);
+	doubleStack* h = readHistory();
+	startShell(p, h);
 	return 0;
 }
 

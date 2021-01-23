@@ -27,3 +27,5 @@ doubleStack *readHistory();
 char *handleArrowUp(doubleStack *);
 
 char *handleArrowDown(doubleStack *);
+
+void printStack(stack *);

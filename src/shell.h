@@ -11,7 +11,7 @@ typedef struct command {
     char *cmd;
     char **args;
     int size;
-	short background;
+	short isBackground;
 	short isBuiltin;
 } command;
 
