@@ -44,6 +44,9 @@ char *getStatus(int statusCode){
 	case 4:
 		return "Done";
 		break;
+	case 5:
+		return "Continued";
+		break;
 	default:
 		return NULL;
 		break;
@@ -71,6 +74,7 @@ void setStatus(jobList *jobs,int pId, int status){
 }
 
 void deleteJob(jobList *jobs, int jobId){
+	printf("%d\n", jobId);
 	int index = 0;
 	for(int i = 0 ; i < jobs->size ; i++){
 		if(jobs->jl[i].jobid == jobId){
@@ -87,7 +91,6 @@ void deleteJob(jobList *jobs, int jobId){
 
 
 void printJobs(jobList *jobl){
-	// printf("List of jobs: %d\n", jobl->size);
 	for(int i = 0 ; i < jobl->size ; i++){
 		printf("[%d] %d %s \n", jobl->jl[i].jobid , jobl->jl[i].pid, getStatus(jobl->jl[i].status));
 	}
@@ -133,18 +136,7 @@ void freeJobs(jobList *jobs){
 		} 
 	}
 	for(int i = 0 ; i < k ; i++){
-			deleteJob(jobs, jobs->jl[completed[i]].jobid);
+			deleteJob(jobs,completed[i]);
 	}
 	return;
 }
-
-
-// int main(){
-// 	jobList *jobs = initJobList();
-// 	addJob(jobs,100,NULL,FOREGROUND);
-// 	addJob(jobs,101,NULL,FOREGROUND);
-// 	setStatus(jobs,100,DONE);
-// 	// deleteJob(jobs,2);
-// 	printJobs(jobs);
-// 	freeJobs(jobs);
-// }

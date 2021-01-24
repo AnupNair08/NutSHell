@@ -298,3 +298,231 @@ jobs
 exit
 sleep 5
 jobs
+ls
+sleep 5 &
+jobs
+jobs
+jobs
+jobs
+jobs
+jobs
+jobs
+ls
+ls &
+jobs
+sleep 5
+ls
+jobs
+os
+exit
+exit
+ls
+jobs
+sleep 5 
+jobs
+ls
+ls &
+jobs
+ls
+pwd
+jobs
+jobs
+jobs
+jobs
+exit
+ls
+pwd
+jobs
+jobs
+jobs
+exit
+ls
+jobs
+jobs
+jobs
+ls
+ls &
+jobs
+sleep 5
+jobs
+sleep 5
+jobs
+jobs
+jobs
+jobs
+clear
+exit
+ls
+jobs
+sleep 5
+jobs
+jobs
+pwd
+jobs
+jobs
+sleep 5 &
+jobs
+jobs
+jobs
+jobs
+jobs
+jobs
+ls
+jobs
+jobs
+jobs
+exit
+ls
+jobs
+jobs
+pwd
+ls
+jobs
+jobs
+sleep 5 &
+jobs
+jobs
+exit
+ls
+jobs
+sleep 5 &
+jobs
+jobs
+jobs
+jobs
+jobs
+jobs
+sleep 5
+jobs
+sleep 6
+jobs
+jobs
+jobs
+ls
+jobs
+jobs
+exit
+ls
+jobs
+ls 
+pwd
+cat shell.c
+jobos
+jobs
+jobs
+clear
+sleep 5
+jobs
+jobs
+sleep 3
+jobs
+jobs
+sleep 3 &
+jobs
+jobs
+jobs
+exit
+clear
+sleep 3 &
+jobs
+jobs
+jobs
+exit
+sleep 3 &
+jobs
+jobs
+jobs
+jobs
+jobs
+sleep 5 &
+jobs
+jobs
+jobs
+sleep 3
+jobs
+jobs
+exit
+cat shell.c jobs.c shell.h
+cat Makefile new.txt shell.h
+clear
+exit
+ls
+ls
+jobs
+ls
+clear
+jobs
+sleep 5 &
+ls
+jobs
+exit
+ls
+sleep 5 &
+ls
+EXIT
+exit
+ls
+ls &
+jobs
+sleep 5 &
+ls
+jobs
+clear
+exit
+sleep 5 &
+jobs
+jobs
+sleep 10
+jobs
+jobs
+ls
+jobs
+jobs
+exit
+sleep 5
+jobs
+jobs
+jobs
+ls
+jobs
+jobs
+jobs
+exit 
+clear
+sleep 5
+jobs
+jobs
+exit
+sleep 5
+jobs
+jobs
+ls
+jobs
+jobs
+exit
+sleep 5
+jobs
+jobs
+jobs
+ls
+jobs
+jobs
+sleep 5
+jobs
+exit
+ls
+jobs
+sleep 5 &
+ls
+jobs
+jobs
+jobs
+jobs
+clear
+sleep 5
+jobs
+jobs
+jobs
+fg
+bg
+exit

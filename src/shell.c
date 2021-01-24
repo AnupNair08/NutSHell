@@ -57,10 +57,11 @@ void printPrompt(prompt p){
  * 
  */
 void handleChild(){
-	// pid_t childpid = wait(NULL);
+	int status;
+	pid_t childpid = waitpid(getpid(),&status,WNOHANG);
 	// printf("parent alerted %d\n",childpid);
-	// setStatus(jobs,childpid,4);
-	printf("Ctrl + Z recieved");
+	setStatus(jobs,childpid,4);
+	signal(SIGCHLD, handleChild);
 	return;
 }
 
@@ -84,7 +85,7 @@ void initShell(){
 	signal (SIGINT, SIG_IGN);
 	signal (SIGTSTP, SIG_IGN);
 	signal (SIGTTOU, SIG_IGN);
-	signal (SIGCHLD, SIG_IGN);
+	signal (SIGCHLD, handleChild);
 
 	// Get the process id of the shell's main process
 	int shellpid = getpid();
@@ -144,7 +145,10 @@ void runCmd(cmdList *cl){
 			p->isBackground = 0;
 			printJobID(jobs, pid);
 			addJob(jobs,pid,cl,BACKGROUND);
-			waitpid(pid,&status, WNOHANG);
+			pid_t ppid = waitpid(pid,&status, WNOHANG);
+			if (WIFEXITED(status)){
+				setStatus(jobs,pid,DONE);
+			}
 		}
 		else{
 			addJob(jobs,pid,cl,FOREGROUND);
@@ -155,7 +159,10 @@ void runCmd(cmdList *cl){
 			else if(WIFCONTINUED(status)){
 				setStatus(jobs,pid,CONTINUE);
 			}
-			else if(WIFEXITED(status)){
+			else if (WIFEXITED(status)){
+				setStatus(jobs,pid,DONE);
+			}
+			else{
 				setStatus(jobs,pid,DONE);
 			}
 		}
