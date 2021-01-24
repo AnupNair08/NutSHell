@@ -1,11 +1,200 @@
+ks
 ls
 ls
 ls
-ls
-cat .sh_hisy
-cat .sh_hist
+pwd
 exit
-sleep 2
+ls
 exit
-sleep 2
+ls
+pwd
+sleep 3 &
+jobs
+jobs
+jobs
+jobs
+exit
+jobs
+ls
+jobs
+jobs
+sleep 3 &
+jobs
+jobs
+jobs
+sleep 10 &
+sleep 5 &
+jobs
+jobs
+jobs
+jobs
+exit
+sleep 10 &
+sleep 5 &
+jobs
+jobs
+jobs
+exit
+sleep 5 &
+jobd
+clear
+sleep 5 &
+jobs
+jobs
+jobs
+exit
+sleep 3 &
+jobs
+sleep 10 &
+jobs
+ps
+sleep 3 &
+ls
+exit
+sleep 5 &
+jobs
+ls
+sleep 10 &
+ls
+clear
+exit
+sleep 10 &
+ls
+exit
+sleep 5 &
+ls
+exit
+sleep 5 &
+ls
+exit
+ls
+sleep 3 &
+ls
+exit
+sleep 5 &
+ls
+ls
+cat
+jobs
+jobs
+jobs
+man wait
+exit
+sleep 5 &
+jobs
+ls
+jobs
+jobs
+jobs
+sleep 5 &
+jobs
+jobs
+jobs
+jobs
+jobs
+jobs
+jobs
+ls
+ls
+jobs
+ls
+ls
+exit
+sleep 5 &
+ls
+ls
+ls
+jobs
+jobs
+ls
+pwd
+exit
+ls
+ls
+jobs
+ls
+sleep 5 &
+ls
+ls
+ls
+jobs
+jobs
+ls
+ls
+cat
+ls
+jobs
+sleep 3 &
+ls
+jobs
+jobs
+jobs
+exit
+ls
+ls
+sleep 3 &
+ls
+ls
+jobs
+jobs
+sleep 5 &
+jobs
+sleep 10 &
+jobs
+jobs
+jobs
+exit
+sleep 5 &
+jobs
+man wait
+clear
+exit
+sleep 5 &
+jobs
+exit
+ls
+pwd
+sleep 5 &
+ls
+jobs
+jobs
+cat shell.c | sort
+ls
+sort hello
+sort "hello"
+exit
+ls
+jobs
+sleep 5 &
+jobs
+jobs
+jobs
+sleep 10 &
+ls
+pwd
+jobs
+jobs
+jobs
+clear
+sleep 5 &
+jobs
+jobs
+jobs
+exit
+sleep 5 &
+jobs
+jobd
+jobs
+jobs
+ls &
+jobs
+jobs
+sleep 10 &
+jobs
+jobs
+jobs
+jobs
+jobs
+jobs
+clear
 exit

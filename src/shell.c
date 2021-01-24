@@ -8,9 +8,11 @@
 #include<errno.h>
 #include<signal.h>
 #include "shell.h"
-#include"utility.h"
 #define CMD_SIZE 128
 #define MAX_SIZE 128
+#define RED "\033[1;31m"
+#define BLUE "\x1B[34m"
+#define RESET "\033[0m"
 
 /// @brief Global pointer to store the current working directory
 char *cwd;
@@ -41,14 +43,11 @@ prompt getPrompt(){
  * @param hostname Hostname of the system
  * @param cwd Current working directory
  */
-void printPrompt(char *name, char *hostname, char *cwd){
-	printf("\033[1;31m");
-	printf("%s@", name);
-	printf("%s:", hostname);
-	printf("\x1B[34m");
-	printf("%s",cwd);
-	printf("\033[0m");
-	printf("$ ");
+void printPrompt(prompt p){
+	printf(RED"%s@", p.uname);
+	printf("%s:", p.hostname);
+	printf(BLUE"%s",p.wd);
+	printf(RESET"$ ");
 	return;
 }
 
@@ -58,9 +57,9 @@ void printPrompt(char *name, char *hostname, char *cwd){
  * 
  */
 void handleChild(){
-	pid_t childpid = wait(NULL);
+	// pid_t childpid = wait(NULL);
 	// printf("parent alerted %d\n",childpid);
-	setStatus(jobs,childpid,4);
+	// setStatus(jobs,childpid,4);
 	return;
 }
 
@@ -134,6 +133,7 @@ void runCmd(cmdList *cl){
 		int status;
 		if (p->isBackground){
 		// Run background processes with WNOHANG as it does not wait for the child process to exit
+			p->isBackground = 0;
 			addJob(jobs,pid,cl,BACKGROUND);
 			waitpid(pid,&status, WNOHANG);
 		}
@@ -283,42 +283,43 @@ void runPipe(command *l, command *right){
 ///
 /// @param p Prompt structure to be printed on the terminal
 ///
-void startShell(prompt p, doubleStack *h){
-	// hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
-	// if(hist == -1){
-	// 	perror("History feature startup failed\n");
-	// }
+void startShell(prompt p, stack *s){
+	hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
+	if(hist == -1){
+		perror("History feature startup failed\n");
+	}
 	cwd = p.wd;
 	int pid;
 	char *cmd = (char *)malloc(sizeof(char) * CMD_SIZE);
 	command *parsedCmd;
 	while(1){
-
-	  	printPrompt(p.uname, p.hostname, cwd);
+		p.wd = cwd;
+	  	printPrompt(p);
 		
 		fgets(cmd,MAX_SIZE,stdin);
 		char *buf;
+
 		
-		// Empty input handler
-		if(strcmp(cmd,"\n") == 0 || strlen(cmd) == 0){
+		// Bad input handler
+		if(cmd == NULL || strcmp(cmd,"\n") == 0 || strlen(cmd) == 0){
 			continue;	
 		}
 		// History WIP	
-		// if(strcmp(cmd,"!!\n") == 0){
-		// 	// buf = handleArrowUp(h);
-		// 	buf = pop(h->s1);
-		// 	if(buf == NULL || strcmp(buf,"") == 0){
-		// 		fprintf(stderr,"No history stored\n");
-		// 		continue;
-		// 	}
-		// 	cmd = buf;
-		// 	printPrompt(p.uname, p.hostname, cwd);
-		// 	printf("%s", cmd);
-		// }
-		// else{
-		// 	write(hist,cmd,strlen(cmd));
-		// 	push(h->s1,cmd);
-		// }
+		if(strcmp(cmd,"!!\n") == 0){
+			// buf = handleArrowUp(h);
+			buf = pop(s);
+			if(buf == NULL || strcmp(buf,"") == 0){
+				fprintf(stderr,"No history stored\n");
+				continue;
+			}
+			cmd = buf;
+			printPrompt(p);
+			printf("%s", cmd);
+		}
+		else{
+			write(hist,cmd,strlen(cmd));
+			push(s,cmd);
+		}
 
 		parsedCmd = NULL;
 		cmdList *cl = getParsed(strtok(cmd,"\n"));
@@ -357,10 +358,6 @@ void startShell(prompt p, doubleStack *h){
 			continue;
 		}
 		
-		
-		// if(parsedCmd->background){
-		// 	printf("BG PROCESS");
-		// }
 		if(parsedCmd->isBuiltin){
 				if (strcmp(parsedCmd->cmd,"exit") == 0) {
 				//	printf("I will be Bourne Again.\n");
@@ -411,8 +408,9 @@ int main(int argc, char *argv[]){
 	jobs = initJobList();
 	printf("Welcome to Dead Never SHell(DNSh).\n");
 	prompt p = getPrompt();
-	doubleStack* h = readHistory();
-	startShell(p, h);
+	// doubleStack* h = readHistory();
+	stack *s = stackInit();
+	startShell(p, s);
 	return 0;
 }
 
