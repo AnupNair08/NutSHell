@@ -94,6 +94,16 @@ void printJobs(jobList *jobl){
 	return;
 }
 
+void printJobID(jobList *jobl, int pid){
+	for(int i = 0 ; i < jobl->size ; i++){
+		if(jobl->jl[i].pid == pid){
+			printf("[%d] %d %s \n", jobl->jl[i].jobid , jobl->jl[i].pid, getStatus(jobl->jl[i].status));
+			return;
+		}
+	}
+	return;
+}
+
 void checkzombie(jobList *jobs,int pid){
 	int status;
 	pid_t rpid = waitpid(pid, &status, WNOHANG);
@@ -101,7 +111,7 @@ void checkzombie(jobList *jobs,int pid){
 		if (WIFEXITED(status)) {
 			setStatus(jobs,pid, DONE);
 		} else if (WIFSTOPPED(status)) {
-			setStatus(jobs,pid, STOP);
+			setStatus(jobs,pid, STOPPED);
 		} else if (WIFCONTINUED(status)) {
 			setStatus(jobs,pid, CONTINUE);
 		}

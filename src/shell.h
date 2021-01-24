@@ -3,8 +3,7 @@
 #define BACKGROUND 2
 #define STOPPED 3
 #define DONE 4
-#define STOP 5
-#define CONTINUE 6
+#define CONTINUE 5
 
 /// @brief Stores the working directory, username and hostname
 typedef struct prompt {
@@ -62,7 +61,7 @@ void setStatus(jobList *, int, int);
 void deleteJob(jobList *, int);
 void printJobs(jobList *);
 void freeJobs(jobList *);
-
+void printJobID(jobList *, int);
 stack *stackInit();
 char *pop(stack *);
 void push(stack *, char *);

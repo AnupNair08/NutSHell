@@ -198,3 +198,103 @@ jobs
 jobs
 clear
 exit
+ls | more
+ls | less
+sort shell.c | less
+ls
+sleep 5 &
+jobs
+jobs
+jobs
+exit
+sleep 5 &
+ls
+exit
+sleep 5 &
+ls
+jobs
+jobs
+jobs
+exit
+ls &
+jobs
+jobs
+clear
+bg
+fg
+ls
+pwd
+./a.out
+ps
+sleep 5 &
+ps
+jobs
+jobs
+clear
+exit
+ls &
+ls &
+sleep 5 &
+ls
+ls
+jobs
+jobs
+clear
+exit
+sleep 5
+sleep 5 
+sleep 5
+sleep 5 
+sleep 5
+sleep 5
+sleep 5
+sleep 5
+sleep 10
+exit
+sleep 5
+sleep 5
+sleep 5
+sleep 5
+cd ../tests
+gcc test.c
+./a.out
+sleep 5 
+sleep 5
+sleep 4
+sleep 5
+cd ..
+clear
+make
+exit
+ls
+jobs
+ls
+jobs
+jobs
+sleep 5
+sleep 5
+ls
+ls
+ls
+ls &
+ls
+sleep 5
+sleep 5
+sleep 5
+sleep 5 
+ps
+sleep 5
+[A
+sleep 5
+sleep 20
+sleep 20
+sleep 10
+clear
+exit
+sleep 5
+jobs
+jobs
+jobs
+exit
+sleep 5
+jobs

@@ -60,6 +60,12 @@ void handleChild(){
 	// pid_t childpid = wait(NULL);
 	// printf("parent alerted %d\n",childpid);
 	// setStatus(jobs,childpid,4);
+	printf("Ctrl + Z recieved");
+	return;
+}
+
+void handleStop(){
+	printf("Stopped");
 	return;
 }
 
@@ -78,7 +84,7 @@ void initShell(){
 	signal (SIGINT, SIG_IGN);
 	signal (SIGTSTP, SIG_IGN);
 	signal (SIGTTOU, SIG_IGN);
-	signal (SIGCHLD, handleChild);
+	signal (SIGCHLD, SIG_IGN);
 
 	// Get the process id of the shell's main process
 	int shellpid = getpid();
@@ -111,11 +117,13 @@ void runCmd(cmdList *cl){
 		}
 		// Takes signals from the terminal if it is a foreground process
 		if(!p->isBackground){
-			tcsetpgrp(fd,getpgid(childpid));
 			signal (SIGINT, SIG_DFL);
-			signal (SIGQUIT, SIG_DFL);
 			signal (SIGTSTP, SIG_DFL);
-			signal (SIGTTOU, SIG_DFL);	
+			signal (SIGTTOU, SIG_DFL);
+			signal (SIGCHLD, SIG_DFL);
+			// signal (SIGTTOU, SIG_DFL);	
+			tcsetpgrp(fd,getpgid(childpid));
+			
 		}
 		char *arg[p->size + 2];
 		arg[0] = p->cmd;
@@ -134,13 +142,22 @@ void runCmd(cmdList *cl){
 		if (p->isBackground){
 		// Run background processes with WNOHANG as it does not wait for the child process to exit
 			p->isBackground = 0;
+			printJobID(jobs, pid);
 			addJob(jobs,pid,cl,BACKGROUND);
 			waitpid(pid,&status, WNOHANG);
 		}
 		else{
 			addJob(jobs,pid,cl,FOREGROUND);
-			waitpid(pid,&status,0);
-			setStatus(jobs,pid,DONE);
+			pid_t ppid = waitpid(pid,&status,WUNTRACED|WCONTINUED);
+			if(WIFSTOPPED(status)){
+				setStatus(jobs,pid,STOPPED);
+			}
+			else if(WIFCONTINUED(status)){
+				setStatus(jobs,pid,CONTINUE);
+			}
+			else if(WIFEXITED(status)){
+				setStatus(jobs,pid,DONE);
+			}
 		}
 	}
 	return;
