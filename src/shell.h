@@ -19,6 +19,10 @@ typedef struct command {
     int size;
 	short isBackground;
 	short isBuiltin;
+    int pipein;
+    int pipeout;
+    char *infile;
+    char *outfile;
 } command;
 
 /// @brief Stores array of parsed commands, size of the array, array of special operators and its size
@@ -27,6 +31,7 @@ typedef struct cmdList {
 	int commandSize;
 	char *spcOps;
 	int spcSize;
+    int tokenSize;
 } cmdList;
 
 
@@ -54,6 +59,8 @@ typedef struct stack {
 
 cmdList *getParsed(char *);
 void printParsed();
+
+void printCommand(command *);
 
 jobList *initJobList();
 void addJob(jobList *,int,cmdList *, int);

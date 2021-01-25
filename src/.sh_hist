@@ -36,3 +36,79 @@ vi file.txt
 sort < file.txt
 sort < file.txt > f.txt
 exit
+ls
+help
+cd
+cd ..
+exit
+ls
+sleep 5
+jobs
+jobs
+sleep 5
+ls
+jobs
+jobs
+jobs
+jobs
+jobs
+ls
+jobs
+jobs
+jobs
+jobs
+jobs
+exit
+ls
+cd
+ls
+ls > f.txt
+ls
+cat f.txt
+exit
+ls
+ls > f.txt
+cat f.txt
+rm f.txt
+ls > f.txt
+ls
+exit
+ls > f.txt
+exit
+ls
+ls > f.txt
+exit
+ls
+ls > f.txt
+exit
+ls > f.txt
+cat f.txt
+cd
+exit
+ls > f.txt
+sort < file.txt
+exit
+ls > f.txt
+cat f.txt
+clear
+rm f.txt
+ls > f.txt
+cat f.txt
+clear
+sort < f.txt > g.txt
+cat g.txt
+clear
+exit
+cat shell.c > f.txt
+sort < f.txt > s.txt
+cat s.txt
+clear
+rmxt
+rm s.txt
+ls
+exit
+ls >
+ls <
+ls < f.txt
+clear
+exit

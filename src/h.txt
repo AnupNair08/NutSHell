@@ -5,7 +5,8 @@ command.h
 command.o
 dnsh
 file.txt
-f.txt
+g.txt
+h.txt
 jobs.c
 jobs.o
 Makefile

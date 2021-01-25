@@ -74,7 +74,7 @@ void setStatus(jobList *jobs,int pId, int status){
 }
 
 void deleteJob(jobList *jobs, int jobId){
-	printf("%d\n", jobId);
+	// printf("%d\n", jobId);
 	int index = 0;
 	for(int i = 0 ; i < jobs->size ; i++){
 		if(jobs->jl[i].jobid == jobId){

@@ -103,8 +103,7 @@ void initShell(){
  * 
  * @param cl Pointer to the command list
  */
-void runCmd(cmdList *cl){
-	command *p = &(cl->commandList[0]);
+void runCmd(command *p, cmdList *cl){
 	pid_t pid = fork();
 	if(pid < 0) {
 		perror("");
@@ -132,6 +131,27 @@ void runCmd(cmdList *cl){
 			arg[i+1] = p->args[i];
 		}
 		arg[p->size + 1] = 0;
+		
+		if(p->infile){
+			int fd = open(p->infile, O_RDONLY);
+			if(fd == -1){
+				perror("");
+				return;
+			}
+			dup2(fd,0);
+			close(fd);
+		}
+		if(p->outfile){
+			// puts(p->outfile);
+			int fd2 = open(p->outfile, O_CREAT | O_RDWR);
+			if(fd2 == -1){
+				perror("");
+				return;
+			}
+			dup2(fd2,1);
+			close(fd2);
+		}
+
 		if(execvp(p->cmd,arg) == -1){
 			perror("");
 			// Including this exit cleanly exits out of a process that ended up in an error, thus not causing the exit loops
@@ -143,7 +163,7 @@ void runCmd(cmdList *cl){
 		if (p->isBackground){
 		// Run background processes with WNOHANG as it does not wait for the child process to exit
 			p->isBackground = 0;
-			printJobID(jobs, pid);
+			// printJobID(jobs, pid);
 			addJob(jobs,pid,cl,BACKGROUND);
 			pid_t ppid = waitpid(pid,&status, WNOHANG);
 			if (WIFEXITED(status)){
@@ -168,6 +188,15 @@ void runCmd(cmdList *cl){
 		}
 	}
 	return;
+}
+
+
+void runJob(cmdList *jobs){
+	int size = jobs->commandSize;
+	for(int i = 0 ; i < size; i++){
+		// printCommand(&(jobs->commandList[i]));
+		runCmd(&(jobs->commandList[i]), jobs);
+	}
 }
 
 /**
@@ -308,14 +337,14 @@ void runPipe(command *l, command *right){
 /// @param p Prompt structure to be printed on the terminal
 ///
 void startShell(prompt p, stack *s){
-	hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
-	if(hist == -1){
-		perror("History feature startup failed\n");
-	}
+	// hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
+	// if(hist == -1){
+	// 	perror("History feature startup failed\n");
+	// }
 	cwd = p.wd;
 	int pid;
 	char *cmd = (char *)malloc(sizeof(char) * CMD_SIZE);
-	command *parsedCmd;
+	cmdList *parsedCmd;
 	while(1){
 		p.wd = cwd;
 	  	printPrompt(p);
@@ -329,74 +358,74 @@ void startShell(prompt p, stack *s){
 			continue;	
 		}
 		// History WIP	
-		if(strcmp(cmd,"!!\n") == 0){
-			// buf = handleArrowUp(h);
-			buf = pop(s);
-			if(buf == NULL || strcmp(buf,"") == 0){
-				fprintf(stderr,"No history stored\n");
-				continue;
-			}
-			cmd = buf;
-			printPrompt(p);
-			printf("%s", cmd);
-		}
-		else{
-			write(hist,cmd,strlen(cmd));
-			push(s,cmd);
-		}
+		// if(strcmp(cmd,"!!\n") == 0){
+		// 	// buf = handleArrowUp(h);
+		// 	buf = pop(s);
+		// 	if(buf == NULL || strcmp(buf,"") == 0){
+		// 		fprintf(stderr,"No history stored\n");
+		// 		continue;
+		// 	}
+		// 	cmd = buf;
+		// 	printPrompt(p);
+		// 	// printf("%s", cmd);
+		// }
+		// else{
+		// 	write(hist,cmd,strlen(cmd));
+		// 	push(s,cmd);
+		// }
 
 		parsedCmd = NULL;
 		cmdList *cl = getParsed(strtok(cmd,"\n"));
 		// printf("%d %d",cl->commandSize, cl->spcSize);
-		if(cl->commandSize != cl->spcSize + 1){
+		if(cl->tokenSize != cl->spcSize + 1){
 			fprintf(stderr,"Parse error: Unexpected syntax\n");
 			continue;
 		}
 		// Handle only single command with arguments
-		if (cl->commandSize == 1){
-			parsedCmd = &(cl->commandList[0]);
-		}
-		else {
-			int fd;
-			for(int i = 0 ; i < cl->spcSize ; i++){
-				switch(cl->spcOps[i]){
-					case '>':
-						runRedirCmd(&(cl->commandList[i]),cl->commandList[i + 1].cmd,"out");
-						break;
-					case '<':
-						runRedirCmd(&(cl->commandList[i]),cl->commandList[i+1].cmd,"in");
-						break;
-					case '|':
-						runPipe(&(cl->commandList[i]),&(cl->commandList[i+1]));
-						break;
-					default:
-						break;
-				}
-			}
-			continue;
-		}
+		// if (cl->commandSize == 1){
+		// 	parsedCmd = &(cl->commandList[0]);
+		// }
+		// else {
+		// 	int fd;
+		// 	for(int i = 0 ; i < cl->spcSize ; i++){
+		// 		switch(cl->spcOps[i]){
+		// 			case '>':
+		// 				runRedirCmd(&(cl->commandList[i]),cl->commandList[i + 1].cmd,"out");
+		// 				break;
+		// 			case '<':
+		// 				runRedirCmd(&(cl->commandList[i]),cl->commandList[i+1].cmd,"in");
+		// 				break;
+		// 			case '|':
+		// 				runPipe(&(cl->commandList[i]),&(cl->commandList[i+1]));
+		// 				break;
+		// 			default:
+		// 				break;
+		// 		}
+		// 	}
+		// 	continue;
+		// }
 		
 		
-		
+		parsedCmd = cl;
 		if(parsedCmd == NULL){
 			continue;
 		}
-		
-		if(parsedCmd->isBuiltin){
-				if (strcmp(parsedCmd->cmd,"exit") == 0) {
+		command *temp = &(parsedCmd->commandList[0]);
+		if(temp->isBuiltin){
+				if (strcmp(temp->cmd,"exit") == 0) {
 				//	printf("I will be Bourne Again.\n");
 					close(hist);
 					exit(0);
 				}
-				else if (strcmp(parsedCmd->cmd,"help") == 0) {
+				else if (strcmp(temp->cmd,"help") == 0) {
 					printf("Help from the shell\n");
 				}
-				else if (strcmp(parsedCmd->cmd,"cd") == 0) {
-					if(parsedCmd->args[0] == NULL){
-						parsedCmd->args[0] = (char *)malloc(128);
-						parsedCmd->args[0] = getenv("HOME");
+				else if (strcmp(temp->cmd,"cd") == 0) {
+					if(temp->args[0] == NULL){
+						temp->args[0] = (char *)malloc(128);
+						temp->args[0] = getenv("HOME");
 					}
-					if (chdir(parsedCmd->args[0]) == 0){
+					if (chdir(temp->args[0]) == 0){
 						prompt newPrompt = getPrompt();
 						cwd = newPrompt.wd;
 					}
@@ -404,7 +433,7 @@ void startShell(prompt p, stack *s){
 						perror("");
 					}
 				}
-				else if (strcmp(parsedCmd->cmd,"history") == 0){
+				else if (strcmp(temp->cmd,"history") == 0){
 					printf("Shell History:\n");
 					int fd = open(".sh_hist", O_RDONLY);
 					struct stat s;
@@ -415,12 +444,12 @@ void startShell(prompt p, stack *s){
 					free(buf);
 					close(fd);				
 				}
-				else if (strcmp(parsedCmd->cmd,"jobs") == 0){
+				else if (strcmp(temp->cmd,"jobs") == 0){
 					freeJobs(jobs);
 				}
 				continue;
 		}
-		runCmd(cl);
+		runJob(parsedCmd);
 		
 	}
 	

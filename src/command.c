@@ -7,7 +7,10 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-/// @brief Array to store all the parsed commands.
+/**
+ * @brief Array to store all the parsed commands.
+ * 
+ */
 command commandList[64];
 int commandSize;
 
@@ -17,11 +20,20 @@ int commandSize;
 char spcOps[32];
 int spcSize;
 
+/**
+ * @brief Tokensize for input by user
+ * 
+ */
+int tokenSize;
+
 
 /// @brief Utility function to print the command
 /// @param c Pointer to command that is to be printed
 void printCommand(command *c){
     printf("Command : %s\n",c->cmd);
+    if(c->infile) printf("Input file: %s\n",c->infile);
+    if(c->outfile) printf("Output file: %s\n",c->outfile);
+    printf("Pipes: %d %d\n",c->pipein, c->pipeout);
     printf("Arguments: ");
     for(int i = 0 ; i < c->size; i++){
         printf("%s ",c->args[i]);
@@ -30,6 +42,45 @@ void printCommand(command *c){
     puts("\n-------------------------");
 }
 
+
+/**
+ * @brief Function to print the array of parsed commands
+ * 
+ */
+void printParsed(){
+    for(int i = 0 ; i < commandSize ; i++){
+        printCommand(&commandList[i]);
+        if(i > 0){
+            printf("%c\n",spcOps[i - 1]);
+        }
+    }
+    return;
+}
+
+
+
+/**
+ * @brief Initialises the array of commands
+ * 
+ */
+void init(){
+    for(int i = 0 ; i < 64 ;i++){
+        commandList[i].infile = NULL;
+        commandList[i].outfile = NULL;
+        commandList[i].pipein = 0;
+        commandList[i].pipeout = 1;
+    }
+    return;
+}
+
+
+
+/**
+ * @brief Helper function to process Quoted text
+ * 
+ * @param s Input token
+ * @return char* 
+ */
 char *removeQt(char *s){
     char *temp = (char *)malloc(strlen(s));
     int k = 0;
@@ -138,29 +189,58 @@ char* parse(char *cmd, int start, int end){
 
 }
 
+
 /**
- * @brief Function to print the array of parsed commands
+ * @brief Helper function to remove file names from the input command
  * 
+ * @param c Array of commands
+ * @param csize Size of commands array
+ * @param s Array of special operators
+ * @param ssize Size of special operators array
  */
-void printParsed(){
-    for(int i = 0 ; i < commandSize ; i++){
-        printCommand(&commandList[i]);
-        if(i > 0){
-            printf("%c\n",spcOps[i - 1]);
+void removeFiles(command *c,int csize, char *s, int ssize){
+    int k = 0;
+    int j;
+    for(int i = 0 ; i < ssize ;i++){
+        if(s[i] == '>' || s[i] == '<'){
+            for(int m = i + 1; m < csize - 1; m++){
+                c[m] = c[m+1];
+            }
+            commandSize--;
+            j = i;
         }
     }
     return;
 }
 
+/**
+ * @brief Utility function to process special operators to determine input and output of each command
+ * 
+ * @param c Array of commands
+ * @param csize Size of commands array 
+ * @param s Array of special operators
+ * @param ssize Size of special operators array
+ */
 void interpret(command *c, int csize, char *s, int ssize){
-    char files[128][128];
-    int k = 0;
     for(int i = 0 ; i < ssize ;i++){
-        if(s[i] == '>' || s[i] == '<'){
-            strcpy(files[k++],c[i+1].cmd);
-            puts(files[k-1]);
+        if(i+1 < ssize && spcOps[i] == '<' && spcOps[i+1] == '>') {
+            c[i].infile = c[i+1].cmd;
+            c[i].outfile = c[i+2].cmd;
         }
+        else if(spcOps[i] == '<')
+        {
+            c[i].infile = c[i+1].cmd;
+        }
+        else if(spcOps[i] == '>'){
+            c[i].outfile = c[i+1].cmd;
+        }
+        else if(spcOps[i] == '|'){
+            c[i+1].pipein = 1;
+            c[i].pipeout = 1; 
+        }       
     }
+    tokenSize = csize;
+    removeFiles(c, ssize,s,csize);
     return;
 }
 
@@ -175,47 +255,52 @@ cmdList *getParsed(char *cmd){
     commandSize = 0;
     spcSize = 0;
     parse(cmd,0,strlen(cmd) + 1);
+    interpret(commandList,commandSize, spcOps, spcSize);
     t->commandList = commandList;
     t->commandSize = commandSize;
     t->spcOps = spcOps;
     t->spcSize = spcSize;
+    t->tokenSize = tokenSize;
     return t;
 }
 
 
 
-int main(){
-    char whitespace[] = " \t\r\n\v";
-    char symbols[] = "<|>&";
-    
-    char cmd[] = "ls | grep < f.txt > g.txt";
-    parse(cmd,0,strlen(cmd) + 1);
+// int main(){
+//     char whitespace[] = " \t\r\n\v";
+//     char symbols[] = "<|>&";
+//     init();
+//     char cmd[] = "ls | grep \"text\" > f.txt < g.txt";
+//     parse(cmd,0,strlen(cmd) + 1);
 
-    interpret(commandList,commandSize, spcOps, spcSize);
+//     interpret(commandList,commandSize, spcOps, spcSize);
+//     for(int i = 0 ; i < commandSize; i++){
+//         printCommand(&commandList[i]);
+//     }
     
-    // int fd;
-    // for(int i = 0, j = 1 ; i < spcSize ; i++, j++){
-    //         switch(spcOps[i]){
-    //             case '|' :
-    //                 printCommand(&commandList[j-1]);
-    //                 printCommand(&commandList[j]);
-    //                 break;
-    //             case '>' :
-    //                 fd = open(commandList[j].cmd, O_CREAT | O_RDWR);
-    //                 dup2(fd,1);
-    //                 execlp(commandList[j-1].cmd,commandList[j-1].cmd,NULL);
-    //                 close(fd);
-    //                 break;
-    //             case '<' :
-    //                 fd = open(commandList[j].cmd, O_RDONLY);
-    //                 if(fd == -1){
-    //                     perror("Redirection failed: ");
-    //                 }
-    //                 dup2(fd,0);
-    //                 execlp(commandList[j-1].cmd,commandList[j-1].cmd,NULL);
-    //                 close(fd);
-    //                 break;
-    //         }
-    //     }
-    return 0;
-}
+//     // int fd;
+//     // for(int i = 0, j = 1 ; i < spcSize ; i++, j++){
+//     //         switch(spcOps[i]){
+//     //             case '|' :
+//     //                 printCommand(&commandList[j-1]);
+//     //                 printCommand(&commandList[j]);
+//     //                 break;
+//     //             case '>' :
+//     //                 fd = open(commandList[j].cmd, O_CREAT | O_RDWR);
+//     //                 dup2(fd,1);
+//     //                 execlp(commandList[j-1].cmd,commandList[j-1].cmd,NULL);
+//     //                 close(fd);
+//     //                 break;
+//     //             case '<' :
+//     //                 fd = open(commandList[j].cmd, O_RDONLY);
+//     //                 if(fd == -1){
+//     //                     perror("Redirection failed: ");
+//     //                 }
+//     //                 dup2(fd,0);
+//     //                 execlp(commandList[j-1].cmd,commandList[j-1].cmd,NULL);
+//     //                 close(fd);
+//     //                 break;
+//     //         }
+//     //     }
+//     return 0;
+// }
