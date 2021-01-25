@@ -30,6 +30,19 @@ void printCommand(command *c){
     puts("\n-------------------------");
 }
 
+char *removeQt(char *s){
+    char *temp = (char *)malloc(strlen(s));
+    int k = 0;
+    for(int i = 0 ; i < strlen(s) ; i++){
+        if(s[i] == '\"'){
+            continue;
+        }
+        temp[k++] = s[i];
+    }
+    return temp;
+}
+
+
 /// @brief Function to parse a single command with arguments
 /// @param cmd String that is to be parsed
 /// @return Pointer to a parsed command 
@@ -46,7 +59,9 @@ command *parseOne(char *cmd){
     else{
         c->isBuiltin = 0;
     }
+
     int i = 0;
+    int isQt = 0;
     while(tok){
         tok = strtok(NULL, " ");
         if(tok == NULL){
@@ -56,10 +71,33 @@ command *parseOne(char *cmd){
             c->isBackground = 1;
             continue;
         }
+        if(tok[strlen(tok) - 1] == '\"' && tok[0] == '\"'){
+            c->args[i] = (char *)malloc(sizeof(char) * 128);
+            c->args[i] = removeQt(tok);
+            isQt = 0;
+            i++;
+        }
+        else if(tok[strlen(tok) - 1] == '\"'){
+            // c->args[i] = strcat(c->args[i],removeQt(tok));
+            sprintf(c->args[i], "%s %s", c->args[i], removeQt(tok));
+            isQt = 0;
+            i++;
+        }
+        else if(tok[0] == '\"'){
+            c->args[i] = (char *)malloc(sizeof(char) * 128);
+            c->args[i] = removeQt(tok);
+            isQt = 1;
+        }
+        else if(isQt == 1){
+            // c->args[i] = strcat(c->args[i],tok);
+            sprintf(c->args[i], "%s %s", c->args[i], removeQt(tok));
+        }
+        else{
+            c->args[i] = (char *)malloc(sizeof(char) * 128);
+            c->args[i] = tok;
+            i++;
+        }
         // puts(tok);
-        c->args[i] = (char *)malloc(sizeof(char) * 128);
-        c->args[i] = tok;
-        i++; 
     }
     c->size = i;
 	commandList[commandSize++] = *c;

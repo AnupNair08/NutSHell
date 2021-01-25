@@ -526,3 +526,96 @@ jobs
 fg
 bg
 exit
+lsmod | grep -i amd
+glxinfo | grep "OpenGL renderer"
+glxinfo 
+glxinfo | grep OpenGL
+exit
+ls
+echo "Hello"
+echo hello
+exit
+echo "Hello"
+echo "Hello World"
+exit
+echo "Hello"
+echo "Hello World"
+exit
+ls
+echo "Hello"
+echo "Hi"
+echo "Hi anup"
+echo "Hi anup nair"
+exit
+echo "hi an nair"
+ls
+echo "hi"
+echo "hi anup"
+echo "h ah b"
+echo "g g g ga"
+exit
+echo "hi"
+echo "hi i an an"
+exit
+echo "hi"
+echo "hi i am ab"
+echo "hi i am"
+echo "hi i am an an"
+make
+exit
+echo "hi"
+echo "hi i"
+echo "hi i am"
+exit
+echo "hi i"
+exit
+echo "hi aas "
+echo "hi a"
+exit
+echo "hello mate"
+echo "hello mate"
+exir
+exit
+echo "hello mate"
+exit
+echo "hi"
+echo hi
+ls
+exit
+echo "hi"
+echo hi
+exit
+echo "hi"
+echo "hello mate"
+exit
+echo "hello "
+jobs
+echo "hello mate"
+ls
+ls
+echo hi
+echo "hi"
+exit
+echo hi
+echo hi
+echo "hi"
+echo hi
+echo "hi"
+echo hi
+echo "hi"
+echo "hello m8"
+clear
+make
+./dnsh
+echo "hi"
+echo "h a 3 4"
+exit
+./dnsh
+exit
+echo "hi"
+echo "hi mate"
+exit
+echo "hi"
+echo "hi mate"
+echo "anup nair is amazinf"
+git add .
