@@ -191,11 +191,11 @@ void runCmd(command *p, cmdList *cl){
 }
 
 
-void runJob(cmdList *jobs){
-	int size = jobs->commandSize;
+void runJob(cmdList *cl){
+	int size = cl->commandSize;
 	for(int i = 0 ; i < size; i++){
-		// printCommand(&(jobs->commandList[i]));
-		runCmd(&(jobs->commandList[i]), jobs);
+		// printCommand((jobs->commandList[i]));
+		runCmd(&(cl->commandList[i]), cl);
 	}
 }
 
@@ -354,7 +354,7 @@ void startShell(prompt p, stack *s){
 
 		
 		// Bad input handler
-		if(cmd == NULL || strcmp(cmd,"\n") == 0 || strlen(cmd) == 0){
+		if(cmd == NULL || strlen(cmd) == 0 || strcmp(cmd,"\n") == 0){
 			continue;	
 		}
 		// History WIP	
@@ -376,35 +376,10 @@ void startShell(prompt p, stack *s){
 
 		parsedCmd = NULL;
 		cmdList *cl = getParsed(strtok(cmd,"\n"));
-		// printf("%d %d",cl->commandSize, cl->spcSize);
-		if(cl->tokenSize != cl->spcSize + 1){
+		if(cl->tokenSize != cl->opSize + 1){
 			fprintf(stderr,"Parse error: Unexpected syntax\n");
 			continue;
 		}
-		// Handle only single command with arguments
-		// if (cl->commandSize == 1){
-		// 	parsedCmd = &(cl->commandList[0]);
-		// }
-		// else {
-		// 	int fd;
-		// 	for(int i = 0 ; i < cl->spcSize ; i++){
-		// 		switch(cl->spcOps[i]){
-		// 			case '>':
-		// 				runRedirCmd(&(cl->commandList[i]),cl->commandList[i + 1].cmd,"out");
-		// 				break;
-		// 			case '<':
-		// 				runRedirCmd(&(cl->commandList[i]),cl->commandList[i+1].cmd,"in");
-		// 				break;
-		// 			case '|':
-		// 				runPipe(&(cl->commandList[i]),&(cl->commandList[i+1]));
-		// 				break;
-		// 			default:
-		// 				break;
-		// 		}
-		// 	}
-		// 	continue;
-		// }
-		
 		
 		parsedCmd = cl;
 		if(parsedCmd == NULL){

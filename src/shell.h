@@ -29,9 +29,9 @@ typedef struct command {
 typedef struct cmdList {
 	command *commandList;
 	int commandSize;
-	char *spcOps;
-	int spcSize;
+    int opSize;
     int tokenSize;
+    int pcbid;
 } cmdList;
 
 
@@ -58,9 +58,9 @@ typedef struct stack {
 
 
 cmdList *getParsed(char *);
-void printParsed();
+int printParsed(cmdList *);
 
-void printCommand(command *);
+void printCommand(command );
 
 jobList *initJobList();
 void addJob(jobList *,int,cmdList *, int);

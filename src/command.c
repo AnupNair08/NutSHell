@@ -29,17 +29,18 @@ int tokenSize;
 
 /// @brief Utility function to print the command
 /// @param c Pointer to command that is to be printed
-void printCommand(command *c){
-    printf("Command : %s\n",c->cmd);
-    if(c->infile) printf("Input file: %s\n",c->infile);
-    if(c->outfile) printf("Output file: %s\n",c->outfile);
-    printf("Pipes: %d %d\n",c->pipein, c->pipeout);
+void printCommand(command c){
+    printf("Command : %s\n",c.cmd);
+    if(c.infile) printf("Input file: %s\n",c.infile);
+    if(c.outfile) printf("Output file: %s\n",c.outfile);
+    printf("Pipes: Input Pipe: %d Output Pipe: %d\n",c.pipein, c.pipeout);
     printf("Arguments: ");
-    for(int i = 0 ; i < c->size; i++){
-        printf("%s ",c->args[i]);
+    for(int i = 0 ; i < c.size; i++){
+        printf("%s ",c.args[i]);
     }
-    printf("\nBuilt in command ? : %d\n", c->isBuiltin);
+    printf("\nBuilt in command ? : %d\n", c.isBuiltin);
     puts("\n-------------------------");
+    return;
 }
 
 
@@ -47,14 +48,11 @@ void printCommand(command *c){
  * @brief Function to print the array of parsed commands
  * 
  */
-void printParsed(){
-    for(int i = 0 ; i < commandSize ; i++){
-        printCommand(&commandList[i]);
-        if(i > 0){
-            printf("%c\n",spcOps[i - 1]);
-        }
+int printParsed(cmdList *cl){
+    for(int i = 0 ; i < cl->commandSize ; i++){
+        printCommand(cl->commandList[i]);
     }
-    return;
+    return commandSize;
 }
 
 
@@ -63,14 +61,14 @@ void printParsed(){
  * @brief Initialises the array of commands
  * 
  */
-void init(){
+cmdList *init(cmdList *cl){
     for(int i = 0 ; i < 64 ;i++){
-        commandList[i].infile = NULL;
-        commandList[i].outfile = NULL;
-        commandList[i].pipein = 0;
-        commandList[i].pipeout = 1;
+        cl->commandList[i].infile = NULL;
+        cl->commandList[i].outfile = NULL;
+        cl->commandList[i].pipein = 0;
+        cl->commandList[i].pipeout = 1;
     }
-    return;
+    return cl;
 }
 
 
@@ -129,7 +127,6 @@ command *parseOne(char *cmd){
             i++;
         }
         else if(tok[strlen(tok) - 1] == '\"'){
-            // c->args[i] = strcat(c->args[i],removeQt(tok));
             sprintf(c->args[i], "%s %s", c->args[i], removeQt(tok));
             isQt = 0;
             i++;
@@ -140,7 +137,6 @@ command *parseOne(char *cmd){
             isQt = 1;
         }
         else if(isQt == 1){
-            // c->args[i] = strcat(c->args[i],tok);
             sprintf(c->args[i], "%s %s", c->args[i], removeQt(tok));
         }
         else{
@@ -165,7 +161,6 @@ char* parse(char *cmd, int start, int end){
 	int index = start;
 	for(int i = start ; i < end; i++) {
 		if(cmd[i] == '|' || cmd[i] == '>' | cmd[i] == '<' ){
-			// printf("%c\n",cmd[i]);
             spcOps[spcSize++] = cmd[i];
             index = i;
 			break;
@@ -199,7 +194,6 @@ char* parse(char *cmd, int start, int end){
  * @param ssize Size of special operators array
  */
 void removeFiles(command *c,int csize, char *s, int ssize){
-    int k = 0;
     int j;
     for(int i = 0 ; i < ssize ;i++){
         if(s[i] == '>' || s[i] == '<'){
@@ -240,7 +234,7 @@ void interpret(command *c, int csize, char *s, int ssize){
         }       
     }
     tokenSize = csize;
-    removeFiles(c, ssize,s,csize);
+    removeFiles(c, csize,s,ssize);
     return;
 }
 
@@ -258,9 +252,9 @@ cmdList *getParsed(char *cmd){
     interpret(commandList,commandSize, spcOps, spcSize);
     t->commandList = commandList;
     t->commandSize = commandSize;
-    t->spcOps = spcOps;
-    t->spcSize = spcSize;
+    t->opSize = spcSize;
     t->tokenSize = tokenSize;
+    t->pcbid = rand();
     return t;
 }
 

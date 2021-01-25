@@ -7,6 +7,9 @@
 #include<sys/wait.h>
 
 
+int currentPCB;
+int currentJob;
+
 
 jobList *initJobList(){
 	jobList *jl = (jobList *)malloc(sizeof(jobList));
@@ -55,7 +58,14 @@ char *getStatus(int statusCode){
 
 void addJob(jobList *jobl, int pid, cmdList *c, int status){
 	job j;
-	j.jobid = jobl->size + 1;
+	if(currentPCB == c->pcbid){
+		j.jobid = currentJob;
+	}
+	else{
+		j.jobid = jobl->size + 1;
+		currentJob = j.jobid;
+		currentPCB = c->pcbid;
+	}
 	j.pid = pid;
 	j.c = c;
 	j.status = status;
