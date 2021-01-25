@@ -1,1 +1,38 @@
 git add .
+git commit -m "fix: commit changes"
+git log
+clear
+grep "Hello Wolrd"
+jobs
+jobs
+jobs
+clear
+echo Hello Anup | grep "Hello"
+clear
+glxinfo | grep "OpenGL Renderer"
+glxinfo | grep "OpenGL"
+glxinfo | grep "OpenGL renderer"
+DX_PRIME=1 
+git log
+clear
+ls
+exit
+ls
+ls -l
+grep
+sort
+sort
+clear
+cat
+clear
+exit
+ls | grep file
+ls | grep file | head
+ls
+sort < new.txt
+cat new.txt
+vi new.txt
+vi file.txt
+sort < file.txt
+sort < file.txt > f.txt
+exit

@@ -1,0 +1,5 @@
+a 
+file
+in
+this is 
+vi

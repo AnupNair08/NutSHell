@@ -152,6 +152,18 @@ void printParsed(){
     return;
 }
 
+void interpret(command *c, int csize, char *s, int ssize){
+    char files[128][128];
+    int k = 0;
+    for(int i = 0 ; i < ssize ;i++){
+        if(s[i] == '>' || s[i] == '<'){
+            strcpy(files[k++],c[i+1].cmd);
+            puts(files[k-1]);
+        }
+    }
+    return;
+}
+
 /**
  * @brief Generates an array of commands and special characters 
  * 
@@ -172,37 +184,38 @@ cmdList *getParsed(char *cmd){
 
 
 
-int caller(){
+int main(){
     char whitespace[] = " \t\r\n\v";
     char symbols[] = "<|>&";
     
-    char cmd[] = "ls -l file xyz | sort <pwd.txt | grep pattern";
+    char cmd[] = "ls | grep < f.txt > g.txt";
     parse(cmd,0,strlen(cmd) + 1);
 
+    interpret(commandList,commandSize, spcOps, spcSize);
     
-    int fd;
-    for(int i = 0, j = 1 ; i < spcSize ; i++, j++){
-            switch(spcOps[i]){
-                case '|' :
-                    printCommand(&commandList[j-1]);
-                    printCommand(&commandList[j]);
-                    break;
-                case '>' :
-                    fd = open(commandList[j].cmd, O_CREAT | O_RDWR);
-                    dup2(fd,1);
-                    execlp(commandList[j-1].cmd,commandList[j-1].cmd,NULL);
-                    close(fd);
-                    break;
-                case '<' :
-                    fd = open(commandList[j].cmd, O_RDONLY);
-                    if(fd == -1){
-                        perror("Redirection failed: ");
-                    }
-                    dup2(fd,0);
-                    execlp(commandList[j-1].cmd,commandList[j-1].cmd,NULL);
-                    close(fd);
-                    break;
-            }
-        }
+    // int fd;
+    // for(int i = 0, j = 1 ; i < spcSize ; i++, j++){
+    //         switch(spcOps[i]){
+    //             case '|' :
+    //                 printCommand(&commandList[j-1]);
+    //                 printCommand(&commandList[j]);
+    //                 break;
+    //             case '>' :
+    //                 fd = open(commandList[j].cmd, O_CREAT | O_RDWR);
+    //                 dup2(fd,1);
+    //                 execlp(commandList[j-1].cmd,commandList[j-1].cmd,NULL);
+    //                 close(fd);
+    //                 break;
+    //             case '<' :
+    //                 fd = open(commandList[j].cmd, O_RDONLY);
+    //                 if(fd == -1){
+    //                     perror("Redirection failed: ");
+    //                 }
+    //                 dup2(fd,0);
+    //                 execlp(commandList[j-1].cmd,commandList[j-1].cmd,NULL);
+    //                 close(fd);
+    //                 break;
+    //         }
+    //     }
     return 0;
 }
