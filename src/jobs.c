@@ -32,6 +32,12 @@ jobList *initJobList(){
 // 	return cmd;
 // }
 
+/**
+ * @brief Get the Status string
+ * 
+ * @param statusCode One of the five possible status code
+ * @return char* 
+ */
 char *getStatus(int statusCode){
 	switch (statusCode)
 	{
@@ -56,7 +62,17 @@ char *getStatus(int statusCode){
 	}
 }
 
-void addJob(jobList *jobl, int pid, cmdList *c, int status){
+/**
+ * @brief Adds a job to the JobList
+ * 
+ * @param jobl Job List in memory
+ * @param pid Process ID of the leader
+ * @param c Array of commands that have been parrsed
+ * @param status Status of the job
+ * 
+ * @return int
+ */
+int addJob(jobList *jobl, int pid, cmdList *c, int status){
 	job j;
 	if(currentPCB == c->pcbid){
 		j.jobid = currentJob;
@@ -70,21 +86,38 @@ void addJob(jobList *jobl, int pid, cmdList *c, int status){
 	j.c = c;
 	j.status = status;
 	jobl->jl[jobl->size++] = j;
-	return;
+	return 1;
 }
 
-void setStatus(jobList *jobs,int pId, int status){
+/**
+ * @brief Changes the Status of a job
+ * 
+ * @param jobs 
+ * @param pId 
+ * @param status 
+ * @return int 
+ */
+int setStatus(jobList *jobs,int pId, int status){
+	// Returns 1 on success and 0 if no such job exists
 	for(int i = 0 ; i < jobs->size ; i++){
 		if(jobs->jl[i].pid == pId){
 			jobs->jl[i].status = status;
-			return;
+			return 1;
 		}
 	}
-	return;
+	return 0;
 }
 
-void deleteJob(jobList *jobs, int jobId){
-	// printf("%d\n", jobId);
+
+/**
+ * @brief Deletes a job with the given job id
+ * 
+ * @param jobs 
+ * @param jobId 
+ * @return int 
+ */
+int deleteJob(jobList *jobs, int jobId){
+	// Returns the number of jobs deleted
 	int index = 0;
 	for(int i = 0 ; i < jobs->size ; i++){
 		if(jobs->jl[i].jobid == jobId){
@@ -96,17 +129,29 @@ void deleteJob(jobList *jobs, int jobId){
 		jobs->jl[i] = jobs->jl[i+1];
 	}
 	jobs->size--;
-	return;
+	return 1;
 }
 
-
-void printJobs(jobList *jobl){
+/**
+ * @brief Utility function to print all jobs
+ * 
+ * @param jobl 
+ * @return int 
+ */
+int printJobs(jobList *jobl){
+	// Returns the number of jobs that were printed
 	for(int i = 0 ; i < jobl->size ; i++){
 		printf("[%d] %d %s \n", jobl->jl[i].jobid , jobl->jl[i].pid, getStatus(jobl->jl[i].status));
 	}
-	return;
+	return jobl->size;
 }
 
+/**
+ * @brief Helper function to print a Job given the ID
+ * 
+ * @param jobl 
+ * @param pid 
+ */
 void printJobID(jobList *jobl, int pid){
 	for(int i = 0 ; i < jobl->size ; i++){
 		if(jobl->jl[i].pid == pid){
@@ -131,7 +176,15 @@ void checkzombie(jobList *jobs,int pid){
 	}
 }
 
-void freeJobs(jobList *jobs){
+
+/**
+ * @brief Function to delete completed job from the job list
+ * 
+ * @param jobs 
+ * @return int 
+ */
+int freeJobs(jobList *jobs){
+	// Returns the number of jobs freed
 	for(int i = 0 ; i < jobs->size ; i++){
 		if (jobs->jl[i].status == FOREGROUND || jobs->jl[i].status == BACKGROUND){
 			checkzombie(jobs,jobs->jl[i].pid);
@@ -148,5 +201,5 @@ void freeJobs(jobList *jobs){
 	for(int i = 0 ; i < k ; i++){
 			deleteJob(jobs,completed[i]);
 	}
-	return;
+	return k;
 }

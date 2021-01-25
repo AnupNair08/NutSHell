@@ -35,16 +35,15 @@ typedef struct cmdList {
 } cmdList;
 
 
-
+/// @brief Stores a job which is a collection of processes
 typedef struct job {
     int jobid;
     int pid;
     cmdList *c;
     int status;
-    struct job *next;
 } job;
 
-
+/// @brief Data Structure to keep track of all jobs
 typedef struct jobList {
     job jl[MAX_JOB_SIZE];
     int size;
@@ -56,19 +55,21 @@ typedef struct stack {
     int top;
 } stack;
 
-
+// Parsing related functions
 cmdList *getParsed(char *);
 int printParsed(cmdList *);
-
 void printCommand(command );
 
+// Job realted functions
 jobList *initJobList();
-void addJob(jobList *,int,cmdList *, int);
-void setStatus(jobList *, int, int);
-void deleteJob(jobList *, int);
-void printJobs(jobList *);
-void freeJobs(jobList *);
+int addJob(jobList *,int,cmdList *, int);
+int setStatus(jobList *, int, int);
+int deleteJob(jobList *, int);
+int printJobs(jobList *);
+int freeJobs(jobList *);
 void printJobID(jobList *, int);
+
+// Stack related functions
 stack *stackInit();
 char *pop(stack *);
 void push(stack *, char *);
