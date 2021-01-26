@@ -97,9 +97,12 @@ char *removeQt(char *s){
 /// @return Pointer to a parsed command 
 command *parseOne(char *cmd){
     command *c = (command *)malloc(sizeof(command));
+    
     c->isBackground = 0;
     c->args = (char **)malloc(sizeof(char *));
 	char *tok = (char *)malloc(sizeof(char) * 128);
+	char *temp = (char *)malloc(strlen(cmd));
+    strcpy(temp,cmd);
     tok = strtok(cmd," ");
     c->cmd = tok;
     if(strcmp(c->cmd,"exit") == 0 || strcmp(c->cmd, "cd") == 0 || strcmp(c->cmd, "help") == 0 || strcmp(c->cmd,"jobs") == 0 || strcmp(c->cmd,"fg") == 0 || strcmp(c->cmd,"bg") == 0 || strcmp(c->cmd,"history") == 0){
@@ -118,6 +121,7 @@ command *parseOne(char *cmd){
         }
         if(strcmp(tok,"&") == 0){
             c->isBackground = 1;
+            puts(temp);
             continue;
         }
         if(tok[strlen(tok) - 1] == '\"' && tok[0] == '\"'){

@@ -9,7 +9,7 @@
 
 int currentPCB;
 int currentJob;
-
+jobList completedBgJobs[16];
 
 jobList *initJobList(){
 	jobList *jl = (jobList *)malloc(sizeof(jobList));
@@ -42,10 +42,10 @@ char *getStatus(int statusCode){
 	switch (statusCode)
 	{
 	case 1:
-		return "Foreground Running";
+		return "Running[FG]";
 		break;
 	case 2:
-		return "Background Running";
+		return "Running[BG]";
 		break;
 	case 3:
 		return "Stopped";
@@ -101,6 +101,9 @@ int setStatus(jobList *jobs,int pId, int status){
 	// Returns 1 on success and 0 if no such job exists
 	for(int i = 0 ; i < jobs->size ; i++){
 		if(jobs->jl[i].pid == pId){
+			if(jobs->jl[i].status == BACKGROUND){
+				addJob(completedBgJobs, jobs->jl[i].pid,jobs->jl[i].c,DONE);
+			}
 			jobs->jl[i].status = status;
 			break;
 		}
@@ -135,6 +138,24 @@ int deleteJob(jobList *jobs, int jobId){
 	return 1;
 }
 
+char *get_process_name(const pid_t pid) {
+	char *name = (char *)malloc(128);
+	char procfile[BUFSIZ];
+	sprintf(procfile, "/proc/%d/cmdline", pid);
+	FILE* f = fopen(procfile, "r");
+	if (f) {
+		size_t size;
+		size = fread(name, sizeof (char), sizeof (procfile), f);
+		if (size > 0) {
+			if ('\n' == name[size - 1])
+				name[size - 1] = '\0';
+		}
+		fclose(f);
+	}
+	return name;
+}
+
+
 /**
  * @brief Utility function to print all jobs
  * 
@@ -143,8 +164,12 @@ int deleteJob(jobList *jobs, int jobId){
  */
 int printJobs(jobList *jobl){
 	// Returns the number of jobs that were printed
+	for(int i = 0 ; i < completedBgJobs->size; i++){
+		printf("[%d]+ %d %s %s\n", completedBgJobs->jl[i].jobid , completedBgJobs->jl[i].pid, getStatus(completedBgJobs->jl[i].status), get_process_name(completedBgJobs->jl[i].pid));
+	}
+	freeJobs(completedBgJobs);
 	for(int i = 0 ; i < jobl->size ; i++){
-		printf("[%d] %d %s \n", jobl->jl[i].jobid , jobl->jl[i].pid, getStatus(jobl->jl[i].status));
+		printf("[%d]+ %d %s %s\n", jobl->jl[i].jobid , jobl->jl[i].pid, getStatus(jobl->jl[i].status), get_process_name(jobl->jl[i].pid));
 	}
 	return jobl->size;
 }
