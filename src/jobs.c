@@ -102,10 +102,13 @@ int setStatus(jobList *jobs,int pId, int status){
 	for(int i = 0 ; i < jobs->size ; i++){
 		if(jobs->jl[i].pid == pId){
 			jobs->jl[i].status = status;
-			return 1;
+			break;
 		}
 	}
-	return 0;
+	if(status == DONE){
+		freeJobs(jobs);	
+	}
+	return 1;
 }
 
 
@@ -190,7 +193,7 @@ int freeJobs(jobList *jobs){
 			checkzombie(jobs,jobs->jl[i].pid);
 		}
 	}
-	printJobs(jobs);
+	// printJobs(jobs);
 	int k = 0;
 	int completed[64];
 	for(int i = 0 ; i < jobs->size ; i++){
@@ -228,4 +231,6 @@ void bringFg(jobList *jobs, int id, int type){
 			}
 		}
 	}
+	printf("No such job\n");
+	return;
 }

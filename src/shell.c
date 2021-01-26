@@ -459,7 +459,7 @@ void startShell(prompt p, stack *s){
 					close(fd);				
 				}
 				else if (strcmp(temp->cmd,"jobs") == 0){
-					freeJobs(jobs);
+					printJobs(jobs);
 				}
 				else if (strcmp(temp->cmd,"fg") == 0){
 					char *id = temp->args[0];
