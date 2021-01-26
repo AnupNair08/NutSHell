@@ -21,6 +21,8 @@ int fd;
 /// @brief List to store the jobs for processing bg and fg operations
 jobList *jobs;
 
+int pipefd[2];
+
 ///
 ///  @brief Function that generates the prompt to be displayed on the shell
 ///  @return Structure that contains the username and the current working directory
@@ -131,7 +133,14 @@ void runCmd(command *p, cmdList *cl){
 			arg[i+1] = p->args[i];
 		}
 		arg[p->size + 1] = 0;
-		
+		if(p->pipeout){
+			close(pipefd[0]);
+			dup2(pipefd[1],1);
+		}
+		if(p->pipein){
+			close(pipefd[1]);
+			dup2(pipefd[0],0);
+		}
 		if(p->infile){
 			int fd = open(p->infile, O_RDONLY);
 			if(fd == -1){
@@ -194,8 +203,23 @@ void runCmd(command *p, cmdList *cl){
 void runJob(cmdList *cl){
 	int size = cl->commandSize;
 	for(int i = 0 ; i < size; i++){
-		// printCommand((jobs->commandList[i]));
-		runCmd(&(cl->commandList[i]), cl);
+		// printCommand((cl->commandList[i]));
+		if(cl->commandList[i].pipein == 1 && cl->commandList[i].pipeout == 1){
+			runCmd(&(cl->commandList[i]), cl);
+			continue;
+		}
+		if(cl->commandList[i].pipeout){
+			pipe(pipefd);
+			runCmd(&(cl->commandList[i]), cl);
+			close(pipefd[1]);
+		}
+		if(cl->commandList[i].pipein){
+			runCmd(&(cl->commandList[i]), cl);
+			close(pipefd[0]);
+		}
+		if(cl->commandList[i].pipein == 0 && cl->commandList[i].pipeout == 0){
+			runCmd(&(cl->commandList[i]), cl);
+		}
 	}
 }
 
