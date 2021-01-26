@@ -424,6 +424,7 @@ void startShell(prompt p, stack *s){
 		if(parsedCmd == NULL){
 			continue;
 		}
+		
 		command *temp = &(parsedCmd->commandList[0]);
 		if(temp->isBuiltin){
 				if (strcmp(temp->cmd,"exit") == 0) {

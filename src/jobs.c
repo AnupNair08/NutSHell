@@ -239,6 +239,7 @@ void bringFg(jobList *jobs, int id, int type){
 	for(int i = 0 ; i < jobs->size; i++){
 		if(flag){
 			if(jobs->jl[i].jobid == id){
+				puts(get_process_name(jobs->jl[i].pid));
 				kill(jobs->jl[i].pid, SIGCONT);
 				setStatus(jobs,jobs->jl[i].pid,FOREGROUND);
 				waitpid(jobs->jl[i].pid,&status,0);
@@ -248,6 +249,7 @@ void bringFg(jobList *jobs, int id, int type){
 		}
 		else{
 			if(jobs->jl[i].pid == id){
+				puts(get_process_name(jobs->jl[i].pid));
 				kill(jobs->jl[i].pid, SIGCONT);
 				setStatus(jobs,jobs->jl[i].pid,FOREGROUND);
 				waitpid(jobs->jl[i].pid,&status,0);
