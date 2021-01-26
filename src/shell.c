@@ -133,14 +133,29 @@ void runCmd(command *p, cmdList *cl){
 			arg[i+1] = p->args[i];
 		}
 		arg[p->size + 1] = 0;
-		if(p->pipeout){
+		if(p->pipein == 1 && p->pipeout == 1){
+			close(pipefd[1]);
+			dup2(pipefd[0],0);
+			close(pipefd[0]);
+			
+			if(pipe(pipefd) == -1){
+				perror("");
+			};
+			close(pipefd[0]);
+			dup2(pipefd[1],1);
+			close(pipefd[1]);
+			// write(1,"hello",5);
+		}
+		else if(p->pipeout){
 			close(pipefd[0]);
 			dup2(pipefd[1],1);
 		}
-		if(p->pipein){
+		else if(p->pipein){
 			close(pipefd[1]);
 			dup2(pipefd[0],0);
 		}
+
+
 		if(p->infile){
 			int fd = open(p->infile, O_RDONLY);
 			if(fd == -1){
@@ -445,6 +460,21 @@ void startShell(prompt p, stack *s){
 				}
 				else if (strcmp(temp->cmd,"jobs") == 0){
 					freeJobs(jobs);
+				}
+				else if (strcmp(temp->cmd,"fg") == 0){
+					char *id = temp->args[0];
+					if(id == NULL){
+						printf("Usage: <fg [%%]id>\n");
+						continue;
+					}
+					if(id[0] == '%'){
+						//call by jobID
+						bringFg(jobs, atoi(id+1),JOBID);
+					}
+					else{
+						//call by process ID
+						bringFg(jobs, atoi(id),PROCESSID);
+					}
 				}
 				continue;
 		}

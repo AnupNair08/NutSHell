@@ -4,7 +4,8 @@
 #define STOPPED 3
 #define DONE 4
 #define CONTINUE 5
-
+#define JOBID 1
+#define PROCESSID 2
 /// @brief Stores the working directory, username and hostname
 typedef struct prompt {
 	char *wd;
@@ -68,6 +69,7 @@ int deleteJob(jobList *, int);
 int printJobs(jobList *);
 int freeJobs(jobList *);
 void printJobID(jobList *, int);
+void bringFg(jobList *, int, int);
 
 // Stack related functions
 stack *stackInit();
