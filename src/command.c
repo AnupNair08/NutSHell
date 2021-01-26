@@ -228,10 +228,14 @@ void interpret(command *c, int csize, char *s, int ssize){
         else if(spcOps[i] == '>'){
             c[i].outfile = c[i+1].cmd;
         }
+        else if(spcOps[i] == '|' && i - 1 >= 0 && (spcOps[i-1] == '<' || spcOps[i-1] == '<')){
+            c[i+1].pipein = 1;
+            c[i -1].pipeout = 1; 
+        }       
         else if(spcOps[i] == '|'){
             c[i+1].pipein = 1;
             c[i].pipeout = 1; 
-        }       
+        } 
     }
     tokenSize = csize;
     removeFiles(c, csize,s,ssize);
