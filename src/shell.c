@@ -10,8 +10,6 @@
 #include "shell.h"
 // #include<readline/readline.h>
 // #include<readline/history.h>
-#define CMD_SIZE 128
-#define MAX_SIZE 128
 #define RED "\033[1;31m"
 #define BLUE "\x1B[34m"
 #define RESET "\033[0m"
@@ -83,7 +81,7 @@ void handleStop(){
  */
 void initShell(){
 	// Get default terminal
-	char *term = (char *)malloc(128);
+	char *term = (char *)malloc(MAX_SIZE);
     ctermid(term);
     fd = open(term,O_RDONLY);
 	// Ignore signals on the foreground processes  
@@ -456,7 +454,7 @@ void startShell(prompt p, stack *s){
 				}
 				else if (strcmp(temp->cmd,"cd") == 0) {
 					if(temp->args[0] == NULL){
-						temp->args[0] = (char *)malloc(128);
+						temp->args[0] = (char *)malloc(MAX_SIZE);
 						temp->args[0] = getenv("HOME");
 					}
 					if (chdir(temp->args[0]) == 0){

@@ -11,7 +11,11 @@
 int currentPCB;
 int currentJob;
 jobList completedBgJobs[16];
-
+ /**
+  * @brief Initialises the job list to store the list of jobs under control
+  * 
+  * @return jobList* 
+  */
 jobList *initJobList(){
 	jobList *jl = (jobList *)malloc(sizeof(jobList));
 	jl->size = 0;
@@ -20,7 +24,7 @@ jobList *initJobList(){
 
 
 // char *getCommand(cmdList *c){
-// 	char *cmd = (char *)malloc(128);
+// 	char *cmd = (char *)malloc(MAX_SIZE);
 // 	char t[2];
 // 	for(int i = 0 ;i < c->commandSize ; i++){
 // 		strcat(cmd, c->commandList->cmd);
@@ -139,8 +143,15 @@ int deleteJob(jobList *jobs, int jobId){
 	return 1;
 }
 
-char *get_process_name(const pid_t pid) {
-	char *name = (char *)malloc(128);
+
+/**
+ * @brief Utility function to get the name of the process from it's process id
+ * 
+ * @param pid Process id 
+ * @return char* 
+ */
+char *getProcName(pid_t pid) {
+	char *name = (char *)malloc(MAX_SIZE);
 	char procfile[BUFSIZ];
 	sprintf(procfile, "/proc/%d/cmdline", pid);
 	FILE* f = fopen(procfile, "r");
@@ -166,11 +177,11 @@ char *get_process_name(const pid_t pid) {
 int printJobs(jobList *jobl){
 	// Returns the number of jobs that were printed
 	for(int i = 0 ; i < completedBgJobs->size; i++){
-		printf("[%d]+ %d %s %s\n", completedBgJobs->jl[i].jobid , completedBgJobs->jl[i].pid, getStatus(completedBgJobs->jl[i].status), get_process_name(completedBgJobs->jl[i].pid));
+		printf("[%d]+ %d %s %s\n", completedBgJobs->jl[i].jobid , completedBgJobs->jl[i].pid, getStatus(completedBgJobs->jl[i].status), getProcName(completedBgJobs->jl[i].pid));
 	}
 	freeJobs(completedBgJobs);
 	for(int i = 0 ; i < jobl->size ; i++){
-		printf("[%d]+ %d %s %s\n", jobl->jl[i].jobid , jobl->jl[i].pid, getStatus(jobl->jl[i].status), get_process_name(jobl->jl[i].pid));
+		printf("[%d]+ %d %s %s\n", jobl->jl[i].jobid , jobl->jl[i].pid, getStatus(jobl->jl[i].status), getProcName(jobl->jl[i].pid));
 	}
 	return jobl->size;
 }
@@ -233,10 +244,16 @@ int freeJobs(jobList *jobs){
 	return k;
 }
 
-
+/**
+ * @brief Handles the resumption of stopped and background jobs that are brought to the foreground
+ * 
+ * @param jobs Job List in current context
+ * @param j Job to be handled
+ * @param fd File descriptor of the terminal process
+ */
 void waitProcess(jobList *jobs,job j, int fd){
 	int status;
-	puts(get_process_name(j.pid));
+	puts(getProcName(j.pid));
 	if(j.status == STOPPED){
 		kill(j.pid, SIGCONT);
 		setStatus(jobs, j.pid,FOREGROUND);
@@ -270,8 +287,16 @@ void waitProcess(jobList *jobs,job j, int fd){
 }
 
 
+
+/**
+ * @brief Brings stopped and background jobs to the foreground
+ * 
+ * @param jobs Job List in current context
+ * @param id Job ID / Process ID to be brought to the foreground
+ * @param type Flag to specify if Job ID or PID is passed as argument
+ */
 void bringFg(jobList *jobs, int id, int type){
-	char *term = (char *)malloc(128);
+	char *term = (char *)malloc(MAX_SIZE);
     ctermid(term);
     int fd = open(term,O_RDONLY);
 	int flag = type == JOBID ? 1 : 0;
@@ -293,9 +318,15 @@ void bringFg(jobList *jobs, int id, int type){
 	return;
 }
 
-
+/**
+ * @brief Resumes a stopped proces in the background
+ * 
+ * @param jobs Job List in context
+ * @param id Job ID / Process ID to be brought to the foreground
+ * @param type Flag to specify if Job ID or PID is passed as argument
+ */
 void sendBg(jobList *jobs, int id, int type){
-	char *term = (char *)malloc(128);
+	char *term = (char *)malloc(MAX_SIZE);
     ctermid(term);
     int fd = open(term,O_RDONLY);
 	int flag = type == JOBID ? 1 : 0;

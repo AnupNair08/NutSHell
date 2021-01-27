@@ -100,7 +100,7 @@ command *parseOne(char *cmd){
     
     c->isBackground = 0;
     c->args = (char **)malloc(sizeof(char *));
-	char *tok = (char *)malloc(sizeof(char) * 128);
+	char *tok = (char *)malloc(sizeof(char) * MAX_SIZE);
 	char *temp = (char *)malloc(strlen(cmd));
     strcpy(temp,cmd);
     tok = strtok(cmd," ");
@@ -128,7 +128,7 @@ command *parseOne(char *cmd){
             continue;
         }
         if((tok[strlen(tok) - 1] == '\"' || tok[strlen(tok) - 1] == '\'') && (tok[0] == '\"' || tok[0] == '\'')){
-            c->args[i] = (char *)malloc(sizeof(char) * 128);
+            c->args[i] = (char *)malloc(sizeof(char) * MAX_SIZE);
             c->args[i] = removeQt(tok);
             isQt = 0;
             i++;
@@ -139,7 +139,7 @@ command *parseOne(char *cmd){
             i++;
         }
         else if(tok[0] == '\"' || tok[0] == '\''){
-            c->args[i] = (char *)malloc(sizeof(char) * 128);
+            c->args[i] = (char *)malloc(sizeof(char) * MAX_SIZE);
             c->args[i] = removeQt(tok);
             isQt = 1;
         }
@@ -147,7 +147,7 @@ command *parseOne(char *cmd){
             sprintf(c->args[i], "%s %s", c->args[i], removeQt(tok));
         }
         else{
-            c->args[i] = (char *)malloc(sizeof(char) * 128);
+            c->args[i] = (char *)malloc(sizeof(char) * MAX_SIZE);
             c->args[i] = tok;
             i++;
         }
@@ -179,7 +179,7 @@ char* parse(char *cmd, int start, int end){
 	}
 	else{
 		int k = 0;
-		char *part = (char *)malloc(128);
+		char *part = (char *)malloc(MAX_SIZE);
 		for(int i = start ; i < end ; i++){
 			part[k++] = cmd[i];
 		}

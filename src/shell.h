@@ -6,6 +6,10 @@
 #define CONTINUE 5
 #define JOBID 1
 #define PROCESSID 2
+#define CMD_SIZE 128
+#define MAX_SIZE 128
+
+
 /// @brief Stores the working directory, username and hostname
 typedef struct prompt {
 	char *wd;
@@ -52,7 +56,7 @@ typedef struct jobList {
 
 
 typedef struct stack {
-    char s[128][128];
+    char s[MAX_SIZE][MAX_SIZE];
     int top;
 } stack;
 
