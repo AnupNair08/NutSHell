@@ -8,6 +8,8 @@
 #include<errno.h>
 #include<signal.h>
 #include "shell.h"
+// #include<readline/readline.h>
+// #include<readline/history.h>
 #define CMD_SIZE 128
 #define MAX_SIZE 128
 #define RED "\033[1;31m"
@@ -18,6 +20,7 @@
 char *cwd;
 int hist;
 int fd;
+
 /// @brief List to store the jobs for processing bg and fg operations
 jobList *jobs;
 
@@ -123,9 +126,16 @@ void runCmd(command *p, cmdList *cl){
 			signal (SIGTSTP, SIG_DFL);
 			signal (SIGTTOU, SIG_DFL);
 			signal (SIGCHLD, SIG_DFL);
-			// signal (SIGTTOU, SIG_DFL);	
+			signal (SIGTTOU, SIG_IGN);	
 			tcsetpgrp(fd,getpgid(childpid));
-			
+		}
+		else{
+			// signal (SIGINT, SIG_DFL);
+			// signal (SIGTSTP, SIG_DFL);
+			// signal (SIGTTOU, SIG_DFL);
+			// signal (SIGCHLD, SIG_DFL);
+			// signal (SIGTTOU, SIG_IGN);		
+			tcsetpgrp(fd,getppid());
 		}
 		char *arg[p->size + 2];
 		arg[0] = p->cmd;
@@ -189,6 +199,7 @@ void runCmd(command *p, cmdList *cl){
 			p->isBackground = 0;
 			// printJobID(jobs, pid);
 			addJob(jobs,pid,cl,BACKGROUND);
+			tcsetpgrp(fd,getpid());
 			pid_t ppid = waitpid(pid,&status, WNOHANG);
 			if (WIFEXITED(status)){
 				setStatus(jobs,pid,DONE);
@@ -199,16 +210,21 @@ void runCmd(command *p, cmdList *cl){
 			pid_t ppid = waitpid(pid,&status,WUNTRACED|WCONTINUED);
 			if(WIFSTOPPED(status)){
 				setStatus(jobs,pid,STOPPED);
+				tcsetpgrp(fd,getpid());
 			}
 			else if(WIFCONTINUED(status)){
 				setStatus(jobs,pid,CONTINUE);
+				tcsetpgrp(fd,pid);
 			}
 			else if (WIFEXITED(status)){
 				setStatus(jobs,pid,DONE);
+				tcsetpgrp(fd,getpid());
 			}
 			else{
 				setStatus(jobs,pid,DONE);
+				tcsetpgrp(fd,getpid());
 			}
+			//Brings the shell process to the foreground
 		}
 	}
 	return;
@@ -384,16 +400,19 @@ void startShell(prompt p, stack *s){
 	int pid;
 	char *cmd = (char *)malloc(sizeof(char) * CMD_SIZE);
 	cmdList *parsedCmd;
+	// rl_bind_key('\t', rl_complete);
 	while(1){
 		p.wd = cwd;
 	  	printPrompt(p);
 		
 		fgets(cmd,MAX_SIZE,stdin);
+		// cmd = readline(NULL);
 		char *buf;
 
 		
 		// Bad input handler
 		if(cmd == NULL || strlen(cmd) == 0 || strcmp(cmd,"\n") == 0){
+			// puts("");
 			continue;	
 		}
 		// History WIP	
@@ -475,6 +494,21 @@ void startShell(prompt p, stack *s){
 					else{
 						//call by process ID
 						bringFg(jobs, atoi(id),PROCESSID);
+					}
+				}
+				else if (strcmp(temp->cmd,"bg") == 0){
+					char *id = temp->args[0];
+					if(id == NULL){
+						printf("Usage: <bg [%%]id>\n");
+						continue;
+					}
+					if(id[0] == '%'){
+						//call by jobID
+						sendBg(jobs, atoi(id+1),JOBID);
+					}
+					else{
+						//call by process ID
+						sendBg(jobs, atoi(id),PROCESSID);
 					}
 				}
 				continue;

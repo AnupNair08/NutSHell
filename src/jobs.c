@@ -5,7 +5,8 @@
 #include<unistd.h>
 #include<sys/types.h>
 #include<sys/wait.h>
-
+#include<fcntl.h>
+#include<signal.h>
 
 int currentPCB;
 int currentJob;
@@ -233,31 +234,91 @@ int freeJobs(jobList *jobs){
 }
 
 
-void bringFg(jobList *jobs, int id, int type){
-	int flag = type == JOBID ? 1 : 0;
+void waitProcess(jobList *jobs,job j, int fd){
 	int status;
+	puts(get_process_name(j.pid));
+	if(j.status == STOPPED){
+		kill(j.pid, SIGCONT);
+		setStatus(jobs, j.pid,FOREGROUND);
+	}
+	else if (j.status == BACKGROUND){
+		tcsetpgrp(fd,j.pid);
+		// printf("%d", tcgetpgrp(fd));
+		kill(j.pid, SIGTSTP);
+		kill(j.pid, SIGCONT);
+		setStatus(jobs,j.pid,FOREGROUND);
+	}
+
+	waitpid(j.pid,&status,WUNTRACED);
+	pid_t pid = j.pid;
+	if(WIFSTOPPED(status)){
+		setStatus(jobs,pid,STOPPED);
+		tcsetpgrp(fd,getpid());
+	}
+	else if(WIFCONTINUED(status)){
+		setStatus(jobs,pid,CONTINUE);
+		tcsetpgrp(fd,pid);
+	}
+	else if (WIFEXITED(status)){
+		setStatus(jobs,pid,DONE);
+		tcsetpgrp(fd,getpid());
+	}
+	else{
+		setStatus(jobs,pid,DONE);
+	}
+	return;
+}
+
+
+void bringFg(jobList *jobs, int id, int type){
+	char *term = (char *)malloc(128);
+    ctermid(term);
+    int fd = open(term,O_RDONLY);
+	int flag = type == JOBID ? 1 : 0;
+	int status, pid;
 	for(int i = 0 ; i < jobs->size; i++){
-		if(flag){
-			if(jobs->jl[i].jobid == id){
-				puts(get_process_name(jobs->jl[i].pid));
-				kill(jobs->jl[i].pid, SIGCONT);
-				setStatus(jobs,jobs->jl[i].pid,FOREGROUND);
-				waitpid(jobs->jl[i].pid,&status,0);
-				setStatus(jobs,jobs->jl[i].pid,DONE);
+			if(flag && jobs->jl[i].jobid == id){
+				waitProcess(jobs,jobs->jl[i],fd);
+				close(fd);
+				return;	
+			}
+			else if(jobs->jl[i].pid == id){
+				waitProcess(jobs,jobs->jl[i],fd);
+				close(fd);
 				return;
 			}
+	}
+	printf("No such job\n");
+	close(fd);
+	return;
+}
+
+
+void sendBg(jobList *jobs, int id, int type){
+	char *term = (char *)malloc(128);
+    ctermid(term);
+    int fd = open(term,O_RDONLY);
+	int flag = type == JOBID ? 1 : 0;
+	pid_t pid;
+	int status;
+	for(int i = 0 ; i < jobs->size; i++){
+		pid = jobs->jl[i].pid;
+		if(flag){
+			if(jobs->jl[i].jobid == id && jobs->jl[i].status == STOPPED){
+				kill(pid, SIGCONT);
+				setStatus(jobs,jobs->jl[i].pid,BACKGROUND);
+			}
+			waitpid(pid, &status, WNOHANG);
+			
 		}
 		else{
-			if(jobs->jl[i].pid == id){
-				puts(get_process_name(jobs->jl[i].pid));
-				kill(jobs->jl[i].pid, SIGCONT);
-				setStatus(jobs,jobs->jl[i].pid,FOREGROUND);
-				waitpid(jobs->jl[i].pid,&status,0);
-				setStatus(jobs,jobs->jl[i].pid,DONE);
-				return;
+			if(jobs->jl[i].pid == id && jobs->jl[i].status == STOPPED){
+				kill(pid, SIGCONT);
+				setStatus(jobs,jobs->jl[i].pid,BACKGROUND);
 			}
 		}
 	}
 	printf("No such job\n");
+	close(fd);
 	return;
 }

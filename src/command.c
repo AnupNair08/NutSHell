@@ -83,7 +83,7 @@ char *removeQt(char *s){
     char *temp = (char *)malloc(strlen(s));
     int k = 0;
     for(int i = 0 ; i < strlen(s) ; i++){
-        if(s[i] == '\"'){
+        if(s[i] == '\"' || s[i] == '\''){
             continue;
         }
         temp[k++] = s[i];
@@ -119,23 +119,26 @@ command *parseOne(char *cmd){
         if(tok == NULL){
             break;
         }
+        // if(strcmp(tok,"\t") == 0){
+        //     continue;
+        // }
         if(strcmp(tok,"&") == 0){
             c->isBackground = 1;
             puts(temp);
             continue;
         }
-        if(tok[strlen(tok) - 1] == '\"' && tok[0] == '\"'){
+        if((tok[strlen(tok) - 1] == '\"' || tok[strlen(tok) - 1] == '\'') && (tok[0] == '\"' || tok[0] == '\'')){
             c->args[i] = (char *)malloc(sizeof(char) * 128);
             c->args[i] = removeQt(tok);
             isQt = 0;
             i++;
         }
-        else if(tok[strlen(tok) - 1] == '\"'){
+        else if(tok[strlen(tok) - 1] == '\"' || tok[strlen(tok) - 1] == '\''){
             sprintf(c->args[i], "%s %s", c->args[i], removeQt(tok));
             isQt = 0;
             i++;
         }
-        else if(tok[0] == '\"'){
+        else if(tok[0] == '\"' || tok[0] == '\''){
             c->args[i] = (char *)malloc(sizeof(char) * 128);
             c->args[i] = removeQt(tok);
             isQt = 1;

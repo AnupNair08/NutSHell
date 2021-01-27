@@ -70,6 +70,8 @@ int printJobs(jobList *);
 int freeJobs(jobList *);
 void printJobID(jobList *, int);
 void bringFg(jobList *, int, int);
+void sendBg(jobList *, int, int);
+
 
 // Stack related functions
 stack *stackInit();
