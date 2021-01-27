@@ -68,6 +68,29 @@ char *getStatus(int statusCode){
 }
 
 /**
+ * @brief Utility function to get the name of the process from it's process id
+ * 
+ * @param pid Process id 
+ * @return char* 
+ */
+char *getProcName(pid_t pid) {
+	char *name = (char *)malloc(MAX_SIZE);
+	char procfile[BUFSIZ];
+	sprintf(procfile, "/proc/%d/cmdline", pid);
+	FILE* f = fopen(procfile, "r");
+	if (f) {
+		size_t size;
+		size = fread(name, sizeof (char), sizeof (procfile), f);
+		if (size > 0) {
+			if ('\n' == name[size - 1])
+				name[size - 1] = '\0';
+		}
+		fclose(f);
+	}
+	return name;
+}
+
+/**
  * @brief Adds a job to the JobList
  * 
  * @param jobl Job List in memory
@@ -104,14 +127,19 @@ int addJob(jobList *jobl, int pid, cmdList *c, int status){
  */
 int setStatus(jobList *jobs,int pId, int status){
 	// Returns 1 on success and 0 if no such job exists
+	int jobid = 1;
 	for(int i = 0 ; i < jobs->size ; i++){
 		if(jobs->jl[i].pid == pId){
 			if(jobs->jl[i].status == BACKGROUND){
+				jobid = jobs->jl[i].jobid;
 				addJob(completedBgJobs, jobs->jl[i].pid,jobs->jl[i].c,DONE);
 			}
 			jobs->jl[i].status = status;
 			break;
 		}
+	}
+	if(status == STOPPED){
+		printf("\n[%d]- Stopped %s\n",jobid, getProcName(pId));
 	}
 	if(status == DONE){
 		freeJobs(jobs);	
@@ -144,28 +172,6 @@ int deleteJob(jobList *jobs, int jobId){
 }
 
 
-/**
- * @brief Utility function to get the name of the process from it's process id
- * 
- * @param pid Process id 
- * @return char* 
- */
-char *getProcName(pid_t pid) {
-	char *name = (char *)malloc(MAX_SIZE);
-	char procfile[BUFSIZ];
-	sprintf(procfile, "/proc/%d/cmdline", pid);
-	FILE* f = fopen(procfile, "r");
-	if (f) {
-		size_t size;
-		size = fread(name, sizeof (char), sizeof (procfile), f);
-		if (size > 0) {
-			if ('\n' == name[size - 1])
-				name[size - 1] = '\0';
-		}
-		fclose(f);
-	}
-	return name;
-}
 
 
 /**

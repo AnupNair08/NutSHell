@@ -8,17 +8,12 @@
 #include<errno.h>
 #include<signal.h>
 #include "shell.h"
-// #include<readline/readline.h>
-// #include<readline/history.h>
-#define RED "\033[1;31m"
-#define BLUE "\x1B[34m"
-#define RESET "\033[0m"
 
 /// @brief Global pointer to store the current working directory
 char *cwd;
 int hist;
 int fd;
-
+prompt p;
 /// @brief List to store the jobs for processing bg and fg operations
 jobList *jobs;
 
@@ -69,7 +64,7 @@ void handleChild(){
 }
 
 void handleStop(){
-	printf("Stopped");
+	printPrompt(p);
 	return;
 }
 
@@ -252,137 +247,6 @@ void runJob(cmdList *cl){
 	}
 }
 
-/**
- * @brief Runs commands that have redirection of I/O
- * 
- * @param p Pointer to command to be executed 
- * @param fileName Name of the file to be used as I/O
- * @param type String denoting the type of redirection
- */
-void runRedirCmd(command *p, char *fileName, char *type){
-	int fd;
-	if(type == "out"){
-		fd = open(fileName, O_CREAT | O_RDWR);
-	}
-	else{
-		fd = open(fileName, O_RDONLY);
-	}
-	if(fd == -1){
-		perror("");
-		return;
-	}
-	int pid = fork();
-	if(pid < 0) {
-		perror("");
-		exit(-1);
-	}
-	if(pid == 0){  
-		char *arg[p->size + 2];
-		arg[0] = p->cmd;
-		for(int i = 0 ; i < p->size ; i++){
-			arg[i+1] = p->args[i];
-		}
-		arg[p->size + 1] = 0;
-		if(fd != -1 && strcmp(type,"out") == 0){
-			dup2(fd,1);
-		}
-		else if(fd != -1 && strcmp(type, "in") == 0){
-			dup2(fd,0);
-		}
-		if(execvp(p->cmd,arg) == -1){
-			perror("");
-			exit(-1);
-		}
-		close(fd);
-	}
-	else{
-		wait(NULL);
-	}
-	return;
-}
-
-/**
- * @brief Runs piped commands
- * 
- * @param l Pointer to the left command
- * @param right Pointer to the right command
- */
-void runPipe(command *l, command *right){
-	// prog 1 | prog2
-	// prog1 writes to stdout which can be linked to a pipefd1
-	// prog2 reads from stdin which can be linked tp pipefd0
-	
-	/*parent writes to fd1 and child reads from fd0*/
-	/*parent closes the read end and child closes the write end*/
-	
-	//we have a pipe made such that fd[1] stdout --- stdin fd[0]
-
-	//			       --> read its inp from stdin fd[0]
-	//			       |
-	//	parent --> prog1 --> prog2
-	//		    |
-	//		    -> writes its op to stdout fd[1]
-	
-	char buf[10];
-	int pidfd[2];
-	int pid = fork();
-	int r=pipe(pidfd);
-	if(r < 0){
-		perror("");
-		exit(1);
-	}
-	if(pid == -1){
-		perror("");
-		exit(1);
-	}
-	//child 1
-	if(pid == 0){
-		int pid2 = fork();
-		//child of child 1
-		//executes prog1
-		if(pid2 == 0){
-			close(pidfd[0]);
-			dup2(pidfd[1],1);
-			close(pidfd[1]);
-			
-			char *arg[l->size + 2];
-			arg[0] = l->cmd;
-			for(int i = 0 ; i < l->size ; i++){
-				arg[i+1] = l->args[i];
-			}
-			arg[l->size + 1] = 0;
-			if(execvp(l->cmd,arg) == -1){
-				perror("");
-				exit(-1);
-			}
-		}
-		//parent of child 2 i.e child 1 executes prog2
-		else{
-			close(pidfd[1]);
-			dup2(pidfd[0],0);
-			close(pidfd[0]);
-			char *arg[right->size + 2];
-			arg[0] = right->cmd;
-			for(int i = 0 ; i < right->size ; i++){
-				arg[i+1] = right->args[i];
-			}
-			arg[right->size + 1] = 0;
-			if(execvp(right->cmd,arg) == -1){
-				perror("");
-				exit(-1);
-			}
-			wait(NULL);
-		}
-	}
-	if(pid){
-		close(pidfd[0]);
-		close(pidfd[1]);
-		wait(NULL);
-	}
-	return;
-}
-
-
 
 /// 
 /// @brief Function to run the shell loop that forks new processes and invokes the exec system call to execute commands
@@ -396,9 +260,9 @@ void startShell(prompt p, stack *s){
 	// }
 	cwd = p.wd;
 	int pid;
-	char *cmd = (char *)malloc(sizeof(char) * CMD_SIZE);
+	// char *cmd = (char *)malloc(sizeof(char) * CMD_SIZE);
+	char *cmd = (char *)malloc(sizeof(char) * MAX_SIZE);
 	cmdList *parsedCmd;
-	// rl_bind_key('\t', rl_complete);
 	while(1){
 		p.wd = cwd;
 	  	printPrompt(p);
@@ -522,7 +386,7 @@ int main(int argc, char *argv[]){
 	initShell();
 	jobs = initJobList();
 	printf("Welcome to Dead Never SHell(DNSh).\n");
-	prompt p = getPrompt();
+	p = getPrompt();
 	// doubleStack* h = readHistory();
 	stack *s = stackInit();
 	startShell(p, s);

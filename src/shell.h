@@ -8,6 +8,10 @@
 #define PROCESSID 2
 #define CMD_SIZE 128
 #define MAX_SIZE 128
+#define RED "\033[1;31m"
+#define BLUE "\x1B[34m"
+#define RESET "\033[0m"
+
 
 
 /// @brief Stores the working directory, username and hostname
