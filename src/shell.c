@@ -12,7 +12,7 @@
 /// @brief Global pointer to store the current working directory
 char *cwd;
 int hist;
-int fd;
+int terminalFd;
 prompt p;
 /// @brief List to store the jobs for processing bg and fg operations
 jobList *jobs;
@@ -24,12 +24,9 @@ int pipefd[2];
 ///  @return Structure that contains the username and the current working directory
 prompt getPrompt(){
 	prompt p;
-	p.wd = (char *)malloc(sizeof(char) * MAX_SIZE);
-	p.uname = (char *)malloc(sizeof(char) * MAX_SIZE);
-	p.hostname = (char *)malloc(sizeof(char) * MAX_SIZE);
 	getcwd(p.wd,MAX_SIZE);
 	gethostname(p.hostname,MAX_SIZE);
-	p.uname = getenv("USER");
+	strcpy(p.uname,getenv("USER"));
 	return p;
 }
 
@@ -78,7 +75,7 @@ void initShell(){
 	// Get default terminal
 	char *term = (char *)malloc(MAX_SIZE);
     ctermid(term);
-    fd = open(term,O_RDONLY);
+    terminalFd = open(term,O_RDONLY);
 
 	// Ignore signals on the shell  
 	signal (SIGINT, SIG_IGN);
@@ -91,7 +88,8 @@ void initShell(){
 	// Set the shell process as the group leader
 	setpgid(shellpid, shellpid);
 	// Transfer the control to the shell
-	tcsetpgrp(fd,shellpid);
+	tcsetpgrp(terminalFd,shellpid);
+	free(term);
 	return;
 }
 
@@ -112,27 +110,32 @@ void runCmd(command *p, cmdList *cl){
 		// Get the child's process id and make it the group leader if there is none
 		int childpid = getpid();
 		int pgid = getpgid(childpid);
+		
 		if (pgid == 0){
 			setpgid(childpid,childpid);
 		}
 		else{
 			setpgid(childpid,pgid);
 		}
-		// Takes signals from the terminal if it is a foreground process
+		
+		// Takes signals from the terminal for child processes
 		signal (SIGINT, SIG_DFL);
 		signal (SIGTSTP, SIG_DFL);
 		signal (SIGTTOU, SIG_DFL);
 		signal (SIGCHLD, SIG_DFL);
-		signal (SIGTTOU, SIG_IGN);	
+		signal (SIGTTOU, SIG_IGN);
+
 		if(!p->isBackground){
-			tcsetpgrp(fd,getpgid(childpid));
+			tcsetpgrp(terminalFd,getpgid(childpid));
 		}
+		
 		char *arg[p->size + 2];
 		arg[0] = p->cmd;
 		for(int i = 0 ; i < p->size ; i++){
 			arg[i+1] = p->args[i];
 		}
 		arg[p->size + 1] = 0;
+		
 		if(p->pipein == 1 && p->pipeout == 1){
 			close(pipefd[1]);
 			dup2(pipefd[0],0);
@@ -144,7 +147,6 @@ void runCmd(command *p, cmdList *cl){
 			close(pipefd[0]);
 			dup2(pipefd[1],1);
 			close(pipefd[1]);
-			// write(1,"hello",5);
 		}
 		else if(p->pipeout){
 			close(pipefd[0]);
@@ -166,7 +168,6 @@ void runCmd(command *p, cmdList *cl){
 			close(fd);
 		}
 		if(p->outfile){
-			// puts(p->outfile);
 			int fd2 = open(p->outfile, O_CREAT | O_RDWR);
 			if(fd2 == -1){
 				perror("");
@@ -185,27 +186,26 @@ void runCmd(command *p, cmdList *cl){
 	else{
 		int status;
 		if (p->isBackground){
-		// Run background processes with WNOHANG as it does not wait for the child process to exit
-			// p->isBackground = 0;
+			// Run background processes with WNOHANG as it does not wait for the child process to exit
 			addJob(jobs,pid,cl,BACKGROUND);
-			pid_t ppid = waitpid(pid,&status, WNOHANG) ;
+			waitpid(pid,&status, WNOHANG) ;
 		}
 		else{
 			addJob(jobs,pid,cl,FOREGROUND);
-			pid_t ppid = waitpid(pid,&status,WUNTRACED);
+			waitpid(pid,&status,WUNTRACED);
+			
 			if(WIFSTOPPED(status)){
 				setStatus(jobs,pid,STOPPED);
-				tcsetpgrp(fd,getpid());
+				tcsetpgrp(terminalFd,getpid());
 			}
 			else if (WIFEXITED(status)){
 				setStatus(jobs,pid,DONE);
-				tcsetpgrp(fd,getpid());
+				tcsetpgrp(terminalFd,getpid());
 			}
 			else{
 				setStatus(jobs,pid,DONE);
-				tcsetpgrp(fd,getpid());
+				tcsetpgrp(terminalFd,getpid());
 			}
-			//Brings the shell process to the foreground
 		}
 	}
 	return;
@@ -248,24 +248,20 @@ void startShell(prompt p, stack *s){
 	// }
 	cwd = p.wd;
 	int pid;
-	// char *cmd = (char *)malloc(sizeof(char) * CMD_SIZE);
+	cmdList *parsedCmd = NULL;
 	char *cmd = (char *)malloc(sizeof(char) * MAX_SIZE);
-	cmdList *parsedCmd;
 	while(1){
-		p.wd = cwd;
+		strcpy(p.wd,cwd);
 	  	printPrompt(p);
-		
 		fgets(cmd,MAX_SIZE,stdin);
-		// cmd = readline(NULL);
-		char *buf;
-
 		
 		// Bad input handler
 		if(cmd == NULL || strlen(cmd) == 0 || strcmp(cmd,"\n") == 0){
-			// puts("");
 			continue;	
 		}
+
 		// History WIP	
+		// char *buf;
 		// if(strcmp(cmd,"!!\n") == 0){
 		// 	// buf = handleArrowUp(h);
 		// 	buf = pop(s);
@@ -282,27 +278,21 @@ void startShell(prompt p, stack *s){
 		// 	push(s,cmd);
 		// }
 
-		parsedCmd = NULL;
-		cmdList *cl = getParsed(strtok(cmd,"\n"));
-		if(cl->tokenSize != cl->opSize + 1){
+		parsedCmd = getParsed(strtok(cmd,"\n"));
+		if(parsedCmd == NULL || parsedCmd->tokenSize != parsedCmd->opSize + 1){
 			fprintf(stderr,"Parse error: Unexpected syntax\n");
 			continue;
 		}
 		
-		parsedCmd = cl;
-		if(parsedCmd == NULL){
-			continue;
-		}
 		
 		command *temp = &(parsedCmd->commandList[0]);
 		if(temp->isBuiltin){
 				if (strcmp(temp->cmd,"exit") == 0) {
 				//	printf("I will be Bourne Again.\n");
-					close(fd);
+					close(terminalFd);
 					free(jobs);
-					// free(p);
-					printf("Exiting...");
-					close(hist);
+					free(cmd);
+					puts("Exiting...");
 					exit(0);
 				}
 				else if (strcmp(temp->cmd,"help") == 0) {
@@ -310,12 +300,12 @@ void startShell(prompt p, stack *s){
 				}
 				else if (strcmp(temp->cmd,"cd") == 0) {
 					if(temp->args[0] == NULL){
-						temp->args[0] = (char *)malloc(MAX_SIZE);
+						temp->args[0] = (char *)malloc(sizeof(char) * MAX_SIZE);
 						temp->args[0] = getenv("HOME");
 					}
 					if (chdir(temp->args[0]) == 0){
-						prompt newPrompt = getPrompt();
-						cwd = newPrompt.wd;
+						getcwd(cwd, MAX_SIZE);
+						if(!temp->args[0]) free(temp->args[0]);
 					}
 					else{
 						perror("");
@@ -341,12 +331,12 @@ void startShell(prompt p, stack *s){
 						printf("Usage: <fg [%%]id>\n");
 						continue;
 					}
+					//call by jobID
 					if(id[0] == '%'){
-						//call by jobID
 						bringFg(jobs, atoi(id+1),JOBID);
 					}
+					//call by process ID
 					else{
-						//call by process ID
 						bringFg(jobs, atoi(id),PROCESSID);
 					}
 				}
@@ -356,12 +346,12 @@ void startShell(prompt p, stack *s){
 						printf("Usage: <bg [%%]id>\n");
 						continue;
 					}
+					//call by jobID
 					if(id[0] == '%'){
-						//call by jobID
 						sendBg(jobs, atoi(id+1),JOBID);
 					}
+					//call by process ID
 					else{
-						//call by process ID
 						sendBg(jobs, atoi(id),PROCESSID);
 					}
 				}
