@@ -92,10 +92,9 @@ char *removeQt(char *s){
 }
 
 
-/// @brief Function to parse a single command with arguments
+/// @brief Function to parse a single command with arguments and add it to list of commands
 /// @param cmd String that is to be parsed
-/// @return Pointer to a parsed command 
-command *parseOne(char *cmd){
+void parseOne(char *cmd){
     command *c = (command *)malloc(sizeof(command));
     
     c->isBackground = 0;
@@ -105,6 +104,7 @@ command *parseOne(char *cmd){
     strcpy(temp,cmd);
     tok = strtok(cmd," ");
     c->cmd = tok;
+    
     if(strcmp(c->cmd,"exit") == 0 || strcmp(c->cmd, "cd") == 0 || strcmp(c->cmd, "help") == 0 || strcmp(c->cmd,"jobs") == 0 || strcmp(c->cmd,"fg") == 0 || strcmp(c->cmd,"bg") == 0 || strcmp(c->cmd,"history") == 0){
         c->isBuiltin = 1;
     }
@@ -119,9 +119,6 @@ command *parseOne(char *cmd){
         if(tok == NULL){
             break;
         }
-        // if(strcmp(tok,"\t") == 0){
-        //     continue;
-        // }
         if(strcmp(tok,"&") == 0){
             c->isBackground = 1;
             puts(temp);
@@ -155,7 +152,10 @@ command *parseOne(char *cmd){
     }
     c->size = i;
 	commandList[commandSize++] = *c;
-    return c;
+    free(tok);
+    free(temp);
+    free(c);
+    return ;
 }
 
 /// @brief Function to parse commands based on tokens

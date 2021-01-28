@@ -93,7 +93,16 @@ void initShell(){
 	return;
 }
 
-
+void freeCommandList(command *c, int size){
+	for(int j = 0; j < size; j++){
+		for(int i = 0 ; i < c[j].size; i++){
+			free(c[j].args[i]);
+		}
+		free(c->cmd);
+	}
+	printf("Freed");
+	return;
+}
 
 /**
  * @brief Function to execute a single command 
@@ -193,7 +202,7 @@ void runCmd(command *p, cmdList *cl){
 		else{
 			addJob(jobs,pid,cl,FOREGROUND);
 			waitpid(pid,&status,WUNTRACED);
-			
+
 			if(WIFSTOPPED(status)){
 				setStatus(jobs,pid,STOPPED);
 				tcsetpgrp(terminalFd,getpid());
@@ -355,9 +364,18 @@ void startShell(prompt p, stack *s){
 						sendBg(jobs, atoi(id),PROCESSID);
 					}
 				}
+				if(parsedCmd){
+					// freeCommandList(parsedCmd->commandList, parsedCmd->commandSize);
+					free(parsedCmd);
+
+				} 
 				continue;
 		}
 		runJob(parsedCmd);
+		if(parsedCmd){
+			// freeCommandList(parsedCmd->commandList, parsedCmd->commandSize);
+			free(parsedCmd);
+		} 
 		
 	}
 	

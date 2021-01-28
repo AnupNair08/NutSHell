@@ -16,9 +16,9 @@
 
 /// @brief Stores the working directory, username and hostname
 typedef struct prompt {
-	char *wd;
-	char *uname;
-	char *hostname;
+	char wd[MAX_SIZE];
+	char uname[MAX_SIZE];
+	char hostname[MAX_SIZE];
 } prompt;
 
 /// @brief Stores the command, arguments, size of args and flags for other operations
@@ -28,8 +28,8 @@ typedef struct command {
     int size;
 	short isBackground;
 	short isBuiltin;
-    int pipein;
-    int pipeout;
+    short pipein;
+    short pipeout;
     char *infile;
     char *outfile;
 } command;
