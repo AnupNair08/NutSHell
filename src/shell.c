@@ -56,9 +56,9 @@ void printPrompt(prompt p){
  */
 void handleChild(){
 	int status;
-	pid_t childpid = waitpid(getpid(),&status,WNOHANG);
+	pid_t childpid = waitpid(-1,&status,WNOHANG);
 	// printf("parent alerted %d\n",childpid);
-	setStatus(jobs,childpid,4);
+	setStatus(jobs,childpid,DONE);
 	signal(SIGCHLD, handleChild);
 	return;
 }
@@ -79,14 +79,15 @@ void initShell(){
 	char *term = (char *)malloc(MAX_SIZE);
     ctermid(term);
     fd = open(term,O_RDONLY);
-	// Ignore signals on the foreground processes  
+
+	// Ignore signals on the shell  
 	signal (SIGINT, SIG_IGN);
 	signal (SIGTSTP, SIG_IGN);
 	signal (SIGTTOU, SIG_IGN);
 	signal (SIGCHLD, handleChild);
 
-	// Get the process id of the shell's main process
 	int shellpid = getpid();
+	// Get the process id of the shell
 	// Set the shell process as the group leader
 	setpgid(shellpid, shellpid);
 	// Transfer the control to the shell
@@ -110,25 +111,21 @@ void runCmd(command *p, cmdList *cl){
 	if(pid == 0){  
 		// Get the child's process id and make it the group leader if there is none
 		int childpid = getpid();
-		if (getpgid(childpid) == 0){
+		int pgid = getpgid(childpid);
+		if (pgid == 0){
 			setpgid(childpid,childpid);
 		}
-		// Takes signals from the terminal if it is a foreground process
-		if(!p->isBackground){
-			signal (SIGINT, SIG_DFL);
-			signal (SIGTSTP, SIG_DFL);
-			signal (SIGTTOU, SIG_DFL);
-			signal (SIGCHLD, SIG_DFL);
-			signal (SIGTTOU, SIG_IGN);	
-			tcsetpgrp(fd,getpgid(childpid));
-		}
 		else{
-			// signal (SIGINT, SIG_DFL);
-			// signal (SIGTSTP, SIG_DFL);
-			// signal (SIGTTOU, SIG_DFL);
-			// signal (SIGCHLD, SIG_DFL);
-			// signal (SIGTTOU, SIG_IGN);		
-			tcsetpgrp(fd,getppid());
+			setpgid(childpid,pgid);
+		}
+		// Takes signals from the terminal if it is a foreground process
+		signal (SIGINT, SIG_DFL);
+		signal (SIGTSTP, SIG_DFL);
+		signal (SIGTTOU, SIG_DFL);
+		signal (SIGCHLD, SIG_DFL);
+		signal (SIGTTOU, SIG_IGN);	
+		if(!p->isBackground){
+			tcsetpgrp(fd,getpgid(childpid));
 		}
 		char *arg[p->size + 2];
 		arg[0] = p->cmd;
@@ -189,25 +186,16 @@ void runCmd(command *p, cmdList *cl){
 		int status;
 		if (p->isBackground){
 		// Run background processes with WNOHANG as it does not wait for the child process to exit
-			p->isBackground = 0;
-			// printJobID(jobs, pid);
+			// p->isBackground = 0;
 			addJob(jobs,pid,cl,BACKGROUND);
-			tcsetpgrp(fd,getpid());
-			pid_t ppid = waitpid(pid,&status, WNOHANG);
-			if (WIFEXITED(status)){
-				setStatus(jobs,pid,DONE);
-			}
+			pid_t ppid = waitpid(pid,&status, WNOHANG) ;
 		}
 		else{
 			addJob(jobs,pid,cl,FOREGROUND);
-			pid_t ppid = waitpid(pid,&status,WUNTRACED|WCONTINUED);
+			pid_t ppid = waitpid(pid,&status,WUNTRACED);
 			if(WIFSTOPPED(status)){
 				setStatus(jobs,pid,STOPPED);
 				tcsetpgrp(fd,getpid());
-			}
-			else if(WIFCONTINUED(status)){
-				setStatus(jobs,pid,CONTINUE);
-				tcsetpgrp(fd,pid);
 			}
 			else if (WIFEXITED(status)){
 				setStatus(jobs,pid,DONE);
@@ -310,6 +298,10 @@ void startShell(prompt p, stack *s){
 		if(temp->isBuiltin){
 				if (strcmp(temp->cmd,"exit") == 0) {
 				//	printf("I will be Bourne Again.\n");
+					close(fd);
+					free(jobs);
+					// free(p);
+					printf("Exiting...");
 					close(hist);
 					exit(0);
 				}
@@ -387,7 +379,6 @@ int main(int argc, char *argv[]){
 	jobs = initJobList();
 	printf("Welcome to Dead Never SHell(DNSh).\n");
 	p = getPrompt();
-	// doubleStack* h = readHistory();
 	stack *s = stackInit();
 	startShell(p, s);
 	return 0;

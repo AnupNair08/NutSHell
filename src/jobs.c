@@ -260,27 +260,28 @@ int freeJobs(jobList *jobs){
 void waitProcess(jobList *jobs,job j, int fd){
 	int status;
 	puts(getProcName(j.pid));
+	if(j.status == DONE) return;
 	if(j.status == STOPPED){
 		kill(j.pid, SIGCONT);
 		setStatus(jobs, j.pid,FOREGROUND);
 	}
 	else if (j.status == BACKGROUND){
-		tcsetpgrp(fd,j.pid);
-		// printf("%d", tcgetpgrp(fd));
+		tcsetpgrp(fd,getpgid(j.pid));
 		kill(j.pid, SIGTSTP);
 		kill(j.pid, SIGCONT);
 		setStatus(jobs,j.pid,FOREGROUND);
+
 	}
 
 	waitpid(j.pid,&status,WUNTRACED);
 	pid_t pid = j.pid;
-	if(WIFSTOPPED(status)){
-		setStatus(jobs,pid,STOPPED);
-		tcsetpgrp(fd,getpid());
-	}
-	else if(WIFCONTINUED(status)){
+	if(WIFCONTINUED(status)){
 		setStatus(jobs,pid,CONTINUE);
 		tcsetpgrp(fd,pid);
+	}
+	else if(WIFSTOPPED(status)){
+		setStatus(jobs,pid,STOPPED);
+		tcsetpgrp(fd,getpid());
 	}
 	else if (WIFEXITED(status)){
 		setStatus(jobs,pid,DONE);
