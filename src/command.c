@@ -230,7 +230,11 @@ void interpret(command *c, int csize, char *s, int ssize){
         }
         else if(spcOps[i] == '<')
         {
-            c[i].infile = c[i+1].cmd;
+            int k = i;
+            while(c[k].infile || c[k].pipein){
+                k--;
+            }
+            c[k].infile = c[i+1].cmd;
         }
         else if(spcOps[i] == '>'){
             c[i].outfile = c[i+1].cmd;

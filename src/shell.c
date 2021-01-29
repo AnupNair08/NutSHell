@@ -109,7 +109,7 @@ void freeCommandList(command *c, int size){
  * 
  * @param cl Pointer to the command list
  */
-void runCmd(command *p, cmdList *cl){
+pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
 	pid_t pid = fork();
 	if(pid < 0) {
 		perror("");
@@ -145,44 +145,36 @@ void runCmd(command *p, cmdList *cl){
 		}
 		arg[p->size + 1] = 0;
 		
-		if(p->pipein == 1 && p->pipeout == 1){
-			close(pipefd[1]);
-			dup2(pipefd[0],0);
-			close(pipefd[0]);
-			
-			if(pipe(pipefd) == -1){
-				perror("");
-			};
-			close(pipefd[0]);
-			dup2(pipefd[1],1);
-			close(pipefd[1]);
-		}
-		else if(p->pipeout){
-			close(pipefd[0]);
-			dup2(pipefd[1],1);
-		}
-		else if(p->pipein){
-			close(pipefd[1]);
-			dup2(pipefd[0],0);
-		}
 
+		// All but the first process should have stdin as op of prev proc
+		if(i != 0){
+			if(dup2(pipefd[0],0) < 0){
+				perror("");
+				exit(1);
+			}
+		}
+		// All but the last process should output to the stdout
+		if(i != cmdSize - 1){
+			if(dup2(pipefd[1],1) < 0){
+				perror("");
+				exit(1);
+			}
+		}
 
 		if(p->infile){
 			int fd = open(p->infile, O_RDONLY);
-			if(fd == -1){
+			if(fd == -1 || dup2(fd,0) < 0){
 				perror("");
-				return;
+				return -1;
 			}
-			dup2(fd,0);
 			close(fd);
 		}
 		if(p->outfile){
 			int fd2 = open(p->outfile, O_CREAT | O_RDWR);
-			if(fd2 == -1){
+			if(fd2 == -1 || dup2(fd2,1) < 0){
 				perror("");
-				return;
+				return -1;
 			}
-			dup2(fd2,1);
 			close(fd2);
 		}
 
@@ -192,9 +184,43 @@ void runCmd(command *p, cmdList *cl){
 			exit(-1);
 		}
 	}
-	else{
-		int status;
-		if (p->isBackground){
+
+	return pid;
+}
+
+
+void runJob(cmdList *cl){
+	int size = cl->commandSize;
+	int pid;
+	int isBg = 0;
+	int pipeArray[size -1][2];
+	for(int i = 0 ; i < size - 1;i++){
+		pipe(pipeArray[i]);
+	}
+	for(int i = 0 ; i < size; i++){
+		// printCommand((cl->commandList[i]));
+		int temp[2] = {0,1};
+		if(cl->commandList[i].isBackground) isBg = 1;
+		if(cl->commandList[i].pipein == 1 && cl->commandList[i].pipeout == 1){
+			int temp[2] = {pipeArray[i-1][0], pipeArray[i][1]} ;
+			pid = runCmd(&(cl->commandList[i]), cl->commandSize, temp,i);
+			close(pipeArray[i][1]);
+			continue;
+		}
+		if(cl->commandList[i].pipeout){
+			pid = runCmd(&(cl->commandList[i]), cl->commandSize, pipeArray[i],i);
+			close(pipeArray[i][1]);
+		}
+		if(cl->commandList[i].pipein){
+			pid = runCmd(&(cl->commandList[i]), cl->commandSize,pipeArray[i-1],i);
+			close(pipeArray[i][0]);
+		}
+		if(cl->commandList[i].pipein == 0 && cl->commandList[i].pipeout == 0){
+			pid = runCmd(&(cl->commandList[i]), cl->commandSize,temp,i);
+		}
+	}
+	int status;
+		if (isBg){
 			// Run background processes with WNOHANG as it does not wait for the child process to exit
 			addJob(jobs,pid,cl,BACKGROUND);
 			waitpid(pid,&status, WNOHANG) ;
@@ -216,32 +242,6 @@ void runCmd(command *p, cmdList *cl){
 				tcsetpgrp(terminalFd,getpid());
 			}
 		}
-	}
-	return;
-}
-
-
-void runJob(cmdList *cl){
-	int size = cl->commandSize;
-	for(int i = 0 ; i < size; i++){
-		// printCommand((cl->commandList[i]));
-		if(cl->commandList[i].pipein == 1 && cl->commandList[i].pipeout == 1){
-			runCmd(&(cl->commandList[i]), cl);
-			continue;
-		}
-		if(cl->commandList[i].pipeout){
-			pipe(pipefd);
-			runCmd(&(cl->commandList[i]), cl);
-			close(pipefd[1]);
-		}
-		if(cl->commandList[i].pipein){
-			runCmd(&(cl->commandList[i]), cl);
-			close(pipefd[0]);
-		}
-		if(cl->commandList[i].pipein == 0 && cl->commandList[i].pipeout == 0){
-			runCmd(&(cl->commandList[i]), cl);
-		}
-	}
 }
 
 
