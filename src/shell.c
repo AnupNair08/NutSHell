@@ -93,27 +93,21 @@ void initShell(){
 	return;
 }
 
-void freeCommandList(command *c, int size){
-	for(int j = 0; j < size; j++){
-		for(int i = 0 ; i < c[j].size; i++){
-			free(c[j].args[i]);
-		}
-		free(c->cmd);
-	}
-	printf("Freed");
-	return;
-}
 
 /**
- * @brief Function to execute a single command 
+ * @brief Command to be executed
  * 
- * @param cl Pointer to the command list
+ * @param p Pointer to the structure of the command 
+ * @param cmdSize Number of commands in the group 
+ * @param pipefd Array of input and output files for the command
+ * @param i Sequence number of the command
+ * @return pid_t Process ID of the executed command
  */
 pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
 	pid_t pid = fork();
 	if(pid < 0) {
 		perror("");
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	if(pid == 0){  
 		// Get the child's process id and make it the group leader if there is none
@@ -150,17 +144,18 @@ pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
 		if(i != 0){
 			if(dup2(pipefd[0],0) < 0){
 				perror("");
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 		}
 		// All but the last process should output to the stdout
 		if(i != cmdSize - 1){
 			if(dup2(pipefd[1],1) < 0){
 				perror("");
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 		}
 
+		// If there is an input file
 		if(p->infile){
 			int fd = open(p->infile, O_RDONLY);
 			if(fd == -1 || dup2(fd,0) < 0){
@@ -169,6 +164,7 @@ pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
 			}
 			close(fd);
 		}
+		// If there is an output file
 		if(p->outfile){
 			int fd2 = open(p->outfile, O_CREAT | O_RDWR);
 			if(fd2 == -1 || dup2(fd2,1) < 0){
@@ -181,26 +177,35 @@ pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
 		if(execvp(p->cmd,arg) == -1){
 			perror("");
 			// Including this exit cleanly exits out of a process that ended up in an error, thus not causing the exit loops
-			exit(-1);
+			exit(EXIT_FAILURE);
 		}
 	}
 
+	// freeCommandList(p);
+	// free(p->args); 
 	return pid;
 }
 
-
+/**
+ * @brief Runs the parsed set of commands that are in the form of a process group
+ * 
+ * @param cl List of parsed commands
+ */
 void runJob(cmdList *cl){
 	int size = cl->commandSize;
 	int pid;
 	int isBg = 0;
 	int pipeArray[size -1][2];
+	int temp[2] = {0,1};
+	
 	for(int i = 0 ; i < size - 1;i++){
 		pipe(pipeArray[i]);
 	}
+	
 	for(int i = 0 ; i < size; i++){
-		// printCommand((cl->commandList[i]));
-		int temp[2] = {0,1};
+
 		if(cl->commandList[i].isBackground) isBg = 1;
+		
 		if(cl->commandList[i].pipein == 1 && cl->commandList[i].pipeout == 1){
 			int temp[2] = {pipeArray[i-1][0], pipeArray[i][1]} ;
 			pid = runCmd(&(cl->commandList[i]), cl->commandSize, temp,i);
@@ -219,29 +224,32 @@ void runJob(cmdList *cl){
 			pid = runCmd(&(cl->commandList[i]), cl->commandSize,temp,i);
 		}
 	}
+	if(pid < 0){
+		exit(EXIT_FAILURE);
+	}
 	int status;
-		if (isBg){
-			// Run background processes with WNOHANG as it does not wait for the child process to exit
-			addJob(jobs,pid,cl,BACKGROUND);
-			waitpid(pid,&status, WNOHANG) ;
+	if (isBg){
+		// Run background processes with WNOHANG as it does not wait for the child process to exit
+		addJob(jobs,pid,cl,BACKGROUND);
+		waitpid(pid,&status, WNOHANG) ;
+	}
+	else{
+		addJob(jobs,pid,cl,FOREGROUND);
+		waitpid(pid,&status,WUNTRACED);
+
+		if(WIFSTOPPED(status)){
+			setStatus(jobs,pid,STOPPED);
+			tcsetpgrp(terminalFd,getpid());
+		}
+		else if (WIFEXITED(status)){
+			setStatus(jobs,pid,DONE);
+			tcsetpgrp(terminalFd,getpid());
 		}
 		else{
-			addJob(jobs,pid,cl,FOREGROUND);
-			waitpid(pid,&status,WUNTRACED);
-
-			if(WIFSTOPPED(status)){
-				setStatus(jobs,pid,STOPPED);
-				tcsetpgrp(terminalFd,getpid());
-			}
-			else if (WIFEXITED(status)){
-				setStatus(jobs,pid,DONE);
-				tcsetpgrp(terminalFd,getpid());
-			}
-			else{
-				setStatus(jobs,pid,DONE);
-				tcsetpgrp(terminalFd,getpid());
-			}
+			setStatus(jobs,pid,DONE);
+			tcsetpgrp(terminalFd,getpid());
 		}
+	}
 }
 
 
@@ -250,7 +258,7 @@ void runJob(cmdList *cl){
 ///
 /// @param p Prompt structure to be printed on the terminal
 ///
-void startShell(prompt p, stack *s){
+void startShell(prompt p){
 	// hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
 	// if(hist == -1){
 	// 	perror("History feature startup failed\n");
@@ -302,7 +310,7 @@ void startShell(prompt p, stack *s){
 					free(jobs);
 					free(cmd);
 					puts("Exiting...");
-					exit(0);
+					exit(EXIT_SUCCESS);
 				}
 				else if (strcmp(temp->cmd,"help") == 0) {
 					printf("Help from the shell\n");
@@ -387,8 +395,7 @@ int main(int argc, char *argv[]){
 	jobs = initJobList();
 	printf("Welcome to Dead Never SHell(DNSh).\n");
 	p = getPrompt();
-	stack *s = stackInit();
-	startShell(p, s);
+	startShell(p);
 	return 0;
 }
 
