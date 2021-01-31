@@ -1,12 +1,12 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include "shell.h"
 #include<string.h>
 #include<unistd.h>
 #include<sys/types.h>
 #include<sys/wait.h>
 #include<fcntl.h>
 #include<signal.h>
+#include "shell.h"
 
 int currentPCB;
 int currentJob;
