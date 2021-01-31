@@ -14,14 +14,14 @@
 
 
 
-/// @brief Stores the working directory, username and hostname
+/// @brief Stores the working directory, username and hostname.
 typedef struct prompt {
 	char wd[MAX_SIZE];
 	char uname[MAX_SIZE];
 	char hostname[MAX_SIZE];
 } prompt;
 
-/// @brief Stores the command, arguments, size of args and flags for other operations
+/// @brief Stores the command, arguments, size of args and flags for other operations.
 typedef struct command {
     char *cmd;
     char **args;
@@ -34,7 +34,7 @@ typedef struct command {
     char *outfile;
 } command;
 
-/// @brief Stores array of parsed commands, size of the array, array of special operators and its size
+/// @brief Stores array of parsed commands, size of the array, array of special operators and its size.
 typedef struct cmdList {
 	command *commandList;
 	int commandSize;
@@ -44,7 +44,7 @@ typedef struct cmdList {
 } cmdList;
 
 
-/// @brief Stores a job which is a collection of processes
+/// @brief Stores a job which is a collection of processes.
 typedef struct job {
     int jobid;
     int pid;
@@ -52,7 +52,7 @@ typedef struct job {
     int status;
 } job;
 
-/// @brief Data Structure to keep track of all jobs
+/// @brief Data Structure to keep track of all jobs.
 typedef struct jobList {
     job jl[MAX_JOB_SIZE];
     int size;
@@ -64,12 +64,12 @@ typedef struct stack {
     int top;
 } stack;
 
-// Parsing related functions
+// Parsing related functions.
 cmdList *getParsed(char *);
 int printParsed(cmdList *);
 void printCommand(command );
 
-// Job realted functions
+// Job realted functions.
 jobList *initJobList();
 int addJob(jobList *,int,cmdList *, int);
 int setStatus(jobList *, int, int);
@@ -81,7 +81,7 @@ void bringFg(jobList *, int, int);
 void sendBg(jobList *, int, int);
 
 
-// Stack related functions
+// Stack related functions.
 stack *stackInit();
 char *pop(stack *);
 void push(stack *, char *);

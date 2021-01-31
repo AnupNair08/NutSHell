@@ -9,19 +9,21 @@
 #include<signal.h>
 #include "shell.h"
 
-/// @brief Global pointer to store the current working directory
-char *cwd;
 int hist;
+/// @brief Global pointer to store the current working directory.
+char *cwd;
+/// @brief File descriptor to store the context of current terminal.
 int terminalFd;
+/// @brief Prompt that is displayed on the terminal.
 prompt p;
-/// @brief List to store the jobs for processing bg and fg operations
+/// @brief List to store the jobs for processing bg and fg operations.
 jobList *jobs;
 
-int pipefd[2];
 
-///
-///  @brief Function that generates the prompt to be displayed on the shell
-///  @return Structure that contains the username and the current working directory
+/**
+ * @brief Function that generates the prompt to be displayed on the shell.
+ * @return Structure that contains the username and the current working directory.
+ */
 prompt getPrompt(){
 	prompt p;
 	getcwd(p.wd,MAX_SIZE);
@@ -30,13 +32,12 @@ prompt getPrompt(){
 	return p;
 }
 
-
 /**
- * @brief Utility function to print colored text on terminal
+ * @brief Utility function to print colored text on terminal.
  * 
- * @param name Username of the system
- * @param hostname Hostname of the system
- * @param cwd Current working directory
+ * @param name Username of the system.
+ * @param hostname Hostname of the system.
+ * @param cwd Current working directory.
  */
 void printPrompt(prompt p){
 	printf(RED"%s@", p.uname);
@@ -45,7 +46,6 @@ void printPrompt(prompt p){
 	printf(RESET"$ ");
 	return;
 }
-
 
 /**
  * @brief Signal handler to set completed background process status as done.
@@ -60,15 +60,10 @@ void handleChild(){
 	return;
 }
 
-void handleStop(){
-	printPrompt(p);
-	return;
-}
-
 /**
  * @brief Initialises the shell and makes it run as foreground process.
- *  	  Gets process id of the shell and sets the process group id equal to it
- * 		  Gives the control of the terminal to the process group id  
+ *  	  Gets process id of the shell and sets the process group id equal to it.
+ * 		  Gives the control of the terminal to the process group id.  
  * 
  */
 void initShell(){
@@ -93,15 +88,14 @@ void initShell(){
 	return;
 }
 
-
 /**
- * @brief Command to be executed
+ * @brief Command to be executed.
  * 
- * @param p Pointer to the structure of the command 
- * @param cmdSize Number of commands in the group 
- * @param pipefd Array of input and output files for the command
- * @param i Sequence number of the command
- * @return pid_t Process ID of the executed command
+ * @param p Pointer to the structure of the command.
+ * @param cmdSize Number of commands in the group.
+ * @param pipefd Array of input and output files for the command.
+ * @param i Sequence number of the command.
+ * @return Process ID of the executed command.
  */
 pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
 	pid_t pid = fork();
@@ -187,9 +181,9 @@ pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
 }
 
 /**
- * @brief Runs the parsed set of commands that are in the form of a process group
+ * @brief Runs the parsed set of commands that are in the form of a process group.
  * 
- * @param cl List of parsed commands
+ * @param cl List of parsed commands.
  */
 void runJob(cmdList *cl){
 	int size = cl->commandSize;
@@ -252,12 +246,11 @@ void runJob(cmdList *cl){
 	}
 }
 
-
-/// 
-/// @brief Function to run the shell loop that forks new processes and invokes the exec system call to execute commands
-///
-/// @param p Prompt structure to be printed on the terminal
-///
+/** 
+* @brief Function to run the shell loop that forks new processes and invokes the exec system call to execute commands.
+*
+* @param p Prompt structure to be printed on the terminal.
+*/
 void startShell(prompt p){
 	// hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
 	// if(hist == -1){

@@ -7,28 +7,22 @@
 #include<fcntl.h>
 #include"shell.h"
 
-/**
- * @brief Array to store all the parsed commands.
- * 
- */
+/// @brief Array to store all the parsed commands.
 command commandList[64];
 int commandSize;
 
-/**
- * @brief Array to store all the special operators.
- */
+/// @brief Array to store all the special operators.
 char spcOps[32];
 int spcSize;
 
-/**
- * @brief Tokensize for input by user
- * 
- */
+/// @brief Token size for input by user.
 int tokenSize;
 
-
-/// @brief Utility function to print the command
-/// @param c Pointer to command that is to be printed
+/**
+ * @brief Utility function to print the command.
+ * 
+ * @param c Pointer to command that is to be printed
+ */
 void printCommand(command c){
     printf("Command : %s\n",c.cmd);
     if(c.infile) printf("Input file: %s\n",c.infile);
@@ -43,10 +37,10 @@ void printCommand(command c){
     return;
 }
 
-
 /**
- * @brief Function to print the array of parsed commands
+ * @brief Function to print the array of parsed commands.
  * 
+ * @return Number of parsed commands printed.
  */
 int printParsed(cmdList *cl){
     for(int i = 0 ; i < cl->commandSize ; i++){
@@ -55,29 +49,11 @@ int printParsed(cmdList *cl){
     return commandSize;
 }
 
-
-
 /**
- * @brief Initialises the array of commands
+ * @brief Helper function to process quoted text.
  * 
- */
-cmdList *init(cmdList *cl){
-    for(int i = 0 ; i < 64 ;i++){
-        cl->commandList[i].infile = NULL;
-        cl->commandList[i].outfile = NULL;
-        cl->commandList[i].pipein = 0;
-        cl->commandList[i].pipeout = 1;
-    }
-    return cl;
-}
-
-
-
-/**
- * @brief Helper function to process Quoted text
- * 
- * @param s Input token
- * @return char* 
+ * @param s Input token/
+ * @return Processed string. 
  */
 char *removeQt(char *s){
     char *temp = (char *)malloc(strlen(s));
@@ -91,9 +67,26 @@ char *removeQt(char *s){
     return temp;
 }
 
+/**
+ * @brief Initialises the array of commands.
+ * 
+ * @return Pointer to the initialised command list.
+ */
+cmdList *init(cmdList *cl){
+    for(int i = 0 ; i < 64 ;i++){
+        cl->commandList[i].infile = NULL;
+        cl->commandList[i].outfile = NULL;
+        cl->commandList[i].pipein = 0;
+        cl->commandList[i].pipeout = 1;
+    }
+    return cl;
+}
 
-/// @brief Function to parse a single command with arguments and add it to list of commands
-/// @param cmd String that is to be parsed
+/**
+ * @brief Function to parse a single command with arguments and add it to list of commands.
+ * 
+ * @param cmd String that is to be parsed.
+ */
 void parseOne(char *cmd){
     command *c = (command *)malloc(sizeof(command));
     
@@ -158,11 +151,14 @@ void parseOne(char *cmd){
     return ;
 }
 
-/// @brief Function to parse commands based on tokens
-/// @param cmd User input on commandline
-/// @param start Starting index of the string
-/// @param end Ending index of the string
-/// @return Tokens based on special operators
+/**
+ * @brief Function to parse commands.
+ * 
+ * @param cmd User input on command line.
+ * @param start Starting index of the string.
+ * @param end Ending index of the string.
+ * @return Tokens based on special operators. 
+ */
 char* parse(char *cmd, int start, int end){
     static int j = 0;
 	int index = start;
@@ -191,14 +187,13 @@ char* parse(char *cmd, int start, int end){
 
 }
 
-
 /**
- * @brief Helper function to remove file names from the input command
+ * @brief Helper function to remove file names from the input command.
  * 
- * @param c Array of commands
- * @param csize Size of commands array
- * @param s Array of special operators
- * @param ssize Size of special operators array
+ * @param c Array of commands.
+ * @param csize Size of commands array.
+ * @param s Array of special operators.
+ * @param ssize Size of special operators array.
  */
 void removeFiles(command *c,int csize, char *s, int ssize){
     int j;
@@ -215,12 +210,12 @@ void removeFiles(command *c,int csize, char *s, int ssize){
 }
 
 /**
- * @brief Utility function to process special operators to determine input and output of each command
+ * @brief Utility function to process special operators to determine input and output of each command.
  * 
- * @param c Array of commands
- * @param csize Size of commands array 
- * @param s Array of special operators
- * @param ssize Size of special operators array
+ * @param c Array of commands.
+ * @param csize Size of commands array.
+ * @param s Array of special operators.
+ * @param ssize Size of special operators array.
  */
 void interpret(command *c, int csize, char *s, int ssize){
     for(int i = 0 ; i < ssize ;i++){
@@ -254,10 +249,10 @@ void interpret(command *c, int csize, char *s, int ssize){
 }
 
 /**
- * @brief Generates an array of commands and special characters 
+ * @brief Generates an array of parsed commands. 
  * 
- * @param cmd String of command
- * @return Array of parsed commands alongwith special operators 
+ * @param cmd User input string on the command line.
+ * @return Array of parsed commands. 
  */
 cmdList *getParsed(char *cmd){
     cmdList *t = (cmdList *) malloc (sizeof(cmdList)); 
@@ -272,7 +267,6 @@ cmdList *getParsed(char *cmd){
     t->pcbid = rand();
     return t;
 }
-
 
 
 // int main(){

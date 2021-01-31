@@ -8,13 +8,18 @@
 #include<signal.h>
 #include "shell.h"
 
+
+/// @brief List of completed jobs that were run as background commands.
+jobList completedBgJobs[16];
+
+/// @brief Stored jobid and current job id of the process.
 int currentPCB;
 int currentJob;
-jobList completedBgJobs[16];
+
  /**
-  * @brief Initialises the job list to store the list of jobs under control
+  * @brief Initialises the job list to store the list of jobs under control/
   * 
-  * @return jobList* 
+  * @return Pointer to the initialsied job list.
   */
 jobList *initJobList(){
 	jobList *jl = (jobList *)malloc(sizeof(jobList));
@@ -22,26 +27,11 @@ jobList *initJobList(){
 	return jl;
 }
 
-
-// char *getCommand(cmdList *c){
-// 	char *cmd = (char *)malloc(MAX_SIZE);
-// 	char t[2];
-// 	for(int i = 0 ;i < c->commandSize ; i++){
-// 		strcat(cmd, c->commandList->cmd);
-// 		if(i > 0){
-// 			t[0] = c->spcOps[i-1];
-// 			t[1] = '\0';
-// 			strcat(cmd, t);
-// 		}
-// 	}
-// 	return cmd;
-// }
-
 /**
- * @brief Get the Status string
+ * @brief Get the status string.
  * 
- * @param statusCode One of the five possible status code
- * @return char* 
+ * @param statusCode One of the five possible status code.
+ * @return String decoded with the status code. 
  */
 char *getStatus(int statusCode){
 	switch (statusCode)
@@ -68,10 +58,10 @@ char *getStatus(int statusCode){
 }
 
 /**
- * @brief Utility function to get the name of the process from it's process id
+ * @brief Utility function to get the name of the process from it's process id.
  * 
- * @param pid Process id 
- * @return char* 
+ * @param pid Process id. 
+ * @return String name of the process.
  */
 char *getProcName(pid_t pid) {
 	char *name = (char *)malloc(MAX_SIZE);
@@ -91,14 +81,48 @@ char *getProcName(pid_t pid) {
 }
 
 /**
- * @brief Adds a job to the JobList
+ * @brief Utility function to print all jobs.
  * 
- * @param jobl Job List in memory
- * @param pid Process ID of the leader
- * @param c Array of commands that have been parrsed
- * @param status Status of the job
+ * @param jobl List of jobs being tracked.
+ * @return Number of jobs printed. 
+ */
+int printJobs(jobList *jobl){
+	// Returns the number of jobs that were printed
+	for(int i = 0 ; i < completedBgJobs->size; i++){
+		printf("[%d]+ %d %s %s\n", completedBgJobs->jl[i].jobid , completedBgJobs->jl[i].pid, getStatus(completedBgJobs->jl[i].status), getProcName(completedBgJobs->jl[i].pid));
+	}
+	freeJobs(completedBgJobs);
+	for(int i = 0 ; i < jobl->size ; i++){
+		printf("[%d]+ %d %s %s\n", jobl->jl[i].jobid , jobl->jl[i].pid, getStatus(jobl->jl[i].status), getProcName(jobl->jl[i].pid));
+	}
+	return jobl->size;
+}
+
+/**
+ * @brief Utility function to print a job given the job ID.
  * 
- * @return int
+ * @param jobl List of jobs being tracked.
+ * @param pid Process ID of the leader,
+ */
+void printJobID(jobList *jobl, int pid){
+	for(int i = 0 ; i < jobl->size ; i++){
+		if(jobl->jl[i].pid == pid){
+			printf("[%d] %d %s \n", jobl->jl[i].jobid , jobl->jl[i].pid, getStatus(jobl->jl[i].status));
+			return;
+		}
+	}
+	return;
+}
+
+/**
+ * @brief Adds a job to the job list.
+ * 
+ * @param jobl Job list in memory.
+ * @param pid Process ID of the leader.
+ * @param c Array of commands that have been parsed.
+ * @param status Status of the job.
+ * 
+ * @return Status code of operation.
  */
 int addJob(jobList *jobl, int pid, cmdList *c, int status){
 	job j;
@@ -118,12 +142,12 @@ int addJob(jobList *jobl, int pid, cmdList *c, int status){
 }
 
 /**
- * @brief Changes the Status of a job
+ * @brief Changes the status of a job.
  * 
- * @param jobs 
- * @param pId 
- * @param status 
- * @return int 
+ * @param jobs List of jobs being tracked.
+ * @param pId Process ID of the leader in the job.
+ * @param status New status of the process with the given process ID.
+ * @return Status code of execution. 
  */
 int setStatus(jobList *jobs,int pId, int status){
 	// Returns 1 on success and 0 if no such job exists
@@ -147,13 +171,12 @@ int setStatus(jobList *jobs,int pId, int status){
 	return 1;
 }
 
-
 /**
- * @brief Deletes a job with the given job id
+ * @brief Deletes a job with the given job id.
  * 
- * @param jobs 
- * @param jobId 
- * @return int 
+ * @param jobs List of jobs being tracked.
+ * @param jobId Job ID of the job to be deleted.
+ * @return Status code of execution. 
  */
 int deleteJob(jobList *jobs, int jobId){
 	// Returns the number of jobs deleted
@@ -171,43 +194,6 @@ int deleteJob(jobList *jobs, int jobId){
 	return 1;
 }
 
-
-
-
-/**
- * @brief Utility function to print all jobs
- * 
- * @param jobl 
- * @return int 
- */
-int printJobs(jobList *jobl){
-	// Returns the number of jobs that were printed
-	for(int i = 0 ; i < completedBgJobs->size; i++){
-		printf("[%d]+ %d %s %s\n", completedBgJobs->jl[i].jobid , completedBgJobs->jl[i].pid, getStatus(completedBgJobs->jl[i].status), getProcName(completedBgJobs->jl[i].pid));
-	}
-	freeJobs(completedBgJobs);
-	for(int i = 0 ; i < jobl->size ; i++){
-		printf("[%d]+ %d %s %s\n", jobl->jl[i].jobid , jobl->jl[i].pid, getStatus(jobl->jl[i].status), getProcName(jobl->jl[i].pid));
-	}
-	return jobl->size;
-}
-
-/**
- * @brief Helper function to print a Job given the ID
- * 
- * @param jobl 
- * @param pid 
- */
-void printJobID(jobList *jobl, int pid){
-	for(int i = 0 ; i < jobl->size ; i++){
-		if(jobl->jl[i].pid == pid){
-			printf("[%d] %d %s \n", jobl->jl[i].jobid , jobl->jl[i].pid, getStatus(jobl->jl[i].status));
-			return;
-		}
-	}
-	return;
-}
-
 void checkzombie(jobList *jobs,int pid){
 	int status;
 	pid_t rpid = waitpid(pid, &status, WNOHANG);
@@ -222,12 +208,11 @@ void checkzombie(jobList *jobs,int pid){
 	}
 }
 
-
 /**
- * @brief Function to delete completed job from the job list
+ * @brief Function to delete completed job from the job list.
  * 
- * @param jobs 
- * @return int 
+ * @param jobs List of jobs being tracked.
+ * @return Number of freed jobs. 
  */
 int freeJobs(jobList *jobs){
 	// Returns the number of jobs freed
@@ -251,11 +236,11 @@ int freeJobs(jobList *jobs){
 }
 
 /**
- * @brief Handles the resumption of stopped and background jobs that are brought to the foreground
+ * @brief Handles the resumption of stopped and background jobs that are brought to the foreground.
  * 
- * @param jobs Job List in current context
- * @param j Job to be handled
- * @param fd File descriptor of the terminal process
+ * @param jobs List of jobs being tracked.
+ * @param j Job to be handled.
+ * @param fd File descriptor of the terminal process.
  */
 void waitProcess(jobList *jobs,job j, int fd){
 	int status;
@@ -270,7 +255,6 @@ void waitProcess(jobList *jobs,job j, int fd){
 		kill(j.pid, SIGTSTP);
 		kill(j.pid, SIGCONT);
 		setStatus(jobs,j.pid,FOREGROUND);
-
 	}
 
 	waitpid(j.pid,&status,WUNTRACED);
@@ -293,14 +277,12 @@ void waitProcess(jobList *jobs,job j, int fd){
 	return;
 }
 
-
-
 /**
- * @brief Brings stopped and background jobs to the foreground
+ * @brief Brings stopped and background jobs to the foreground.
  * 
- * @param jobs Job List in current context
- * @param id Job ID / Process ID to be brought to the foreground
- * @param type Flag to specify if Job ID or PID is passed as argument
+ * @param jobs Job List in current context.
+ * @param id Job ID / Process ID to be brought to the foreground.
+ * @param type Flag to specify if Job ID or PID is passed as argument.
  */
 void bringFg(jobList *jobs, int id, int type){
 	char *term = (char *)malloc(MAX_SIZE);
@@ -326,11 +308,11 @@ void bringFg(jobList *jobs, int id, int type){
 }
 
 /**
- * @brief Resumes a stopped proces in the background
+ * @brief Resumes a stopped job in the background.
  * 
- * @param jobs Job List in context
- * @param id Job ID / Process ID to be brought to the foreground
- * @param type Flag to specify if Job ID or PID is passed as argument
+ * @param jobs Job List in context.
+ * @param id Job ID / Process ID to be brought to the foreground.
+ * @param type Flag to specify if Job ID or PID is passed as argument.
  */
 void sendBg(jobList *jobs, int id, int type){
 	char *term = (char *)malloc(MAX_SIZE);
