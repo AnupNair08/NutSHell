@@ -65,17 +65,14 @@ char *getStatus(int statusCode){
  */
 char *getProcName(pid_t pid) {
 	char *name = (char *)malloc(MAX_SIZE);
-	char procfile[BUFSIZ];
+	char procfile[MAX_SIZE];
 	sprintf(procfile, "/proc/%d/cmdline", pid);
-	FILE* f = fopen(procfile, "r");
-	if (f) {
-		size_t size;
-		size = fread(name, sizeof (char), sizeof (procfile), f);
-		if (size > 0) {
-			if ('\n' == name[size - 1])
-				name[size - 1] = '\0';
-		}
-		fclose(f);
+	int fd = open(procfile, O_RDONLY);
+	if(!fd) return NULL;
+	int size = read(fd,name,sizeof(procfile));
+	close(fd);
+	for(int i = 0 ; i < size; i++){
+		if(!name[i]) name[i] = ' ';
 	}
 	return name;
 }
