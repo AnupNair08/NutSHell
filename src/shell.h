@@ -59,9 +59,14 @@ typedef struct jobList {
 } jobList;
 
 
+typedef struct node {
+    struct node *next;
+    char *data;
+} node;
+
 typedef struct stack {
-    char s[MAX_SIZE][MAX_SIZE];
-    int top;
+    node *s;
+    node *top;
 } stack;
 
 // Parsing related functions.
@@ -85,5 +90,6 @@ void sendBg(jobList *, int, int);
 stack *stackInit();
 char *pop(stack *);
 void push(stack *, char *);
+void printStack(stack *);
 
 

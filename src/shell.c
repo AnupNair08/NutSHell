@@ -251,7 +251,7 @@ void runJob(cmdList *cl){
 *
 * @param p Prompt structure to be printed on the terminal.
 */
-void startShell(prompt p){
+void startShell(prompt p, stack *s){
 	// hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
 	// if(hist == -1){
 	// 	perror("History feature startup failed\n");
@@ -264,28 +264,22 @@ void startShell(prompt p){
 		strcpy(p.wd,cwd);
 	  	printPrompt(p);
 		fgets(cmd,MAX_SIZE,stdin);
-		
 		// Bad input handler
 		if(cmd == NULL || strlen(cmd) == 0 || strcmp(cmd,"\n") == 0){
 			continue;	
 		}
 
-		// History WIP	
-		// char *buf;
 		// if(strcmp(cmd,"!!\n") == 0){
-		// 	// buf = handleArrowUp(h);
-		// 	buf = pop(s);
-		// 	if(buf == NULL || strcmp(buf,"") == 0){
-		// 		fprintf(stderr,"No history stored\n");
-		// 		continue;
-		// 	}
-		// 	cmd = buf;
-		// 	printPrompt(p);
-		// 	// printf("%s", cmd);
+		// 	// printStack(s);
+		// 	// k = pop(s);
+		// 	// if(k) puts(k);
+		// 	// else puts("No history stored");
+		// 	continue;
 		// }
 		// else{
-		// 	write(hist,cmd,strlen(cmd));
 		// 	push(s,cmd);
+		// 	// printStack(s);
+		// 	write(hist,cmd,strlen(cmd));
 		// }
 
 		parsedCmd = getParsed(strtok(cmd,"\n"));
@@ -388,7 +382,8 @@ int main(int argc, char *argv[]){
 	jobs = initJobList();
 	printf("Welcome to Dead Never SHell(DNSh).\n");
 	p = getPrompt();
-	startShell(p);
+	stack *s = stackInit();
+	startShell(p,s);
 	return 0;
 }
 

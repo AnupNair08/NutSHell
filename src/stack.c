@@ -1,47 +1,88 @@
 #include<string.h>
 #include<stdlib.h>
 #include<stdio.h>
+#include<fcntl.h>
+#include<unistd.h>
+#include<ctype.h>
 #include "shell.h"
-stack* stackInit(){
-    stack *st = (stack *) malloc(sizeof(stack));
-    st->top = 0;
-    return st;
-}
 
-stack *makeSpace(stack *st){
-    printf("called");
-    for(int i = 0 ; i < 63 ;i++){
-        // st->s[i] = st->s[i + 63];
-        strcpy(st->s[i],st->s[i+63]);
+void printStack(stack *st){
+    node *t = st->s;
+    while(t){
+        puts(t->data);
+        t = t->next;
     }
-    st->top = 63;
-    return st;
+    return;
 }
-
 void push(stack *st,char *cmd){
-    if(st->top > 63) {
-        st = makeSpace(st);
+    node *temp = (node *) malloc(sizeof(node));
+    temp->data = cmd;
+    temp->next = NULL;
+    if(st->s == NULL){
+        st->s = temp;
+        st->top = temp;
+        return;
     }
-    strcpy(st->s[st->top++],cmd);
+    st->top->next = temp;
+    st->top = temp;
     return;
 }
 
 char *pop(stack *st){
-    if(st->top == 0 || st->s[st->top - 1] == NULL){
+    printStack(st);
+    if(st->top == NULL){
+        puts("No history stored");
         return NULL;
+    } 
+    char *temp = (char *)malloc(strlen(st->top->data)); 
+    strcpy(temp,st->top->data);
+    node *freenode = st->top;
+    node *p = st->s;
+    node *q = NULL;
+    while(p != freenode){
+        q = p;
+        p = p->next;
     }
-    return st->s[--st->top];
+    st->top = q;
+    if(q) q->next = NULL;
+    free(freenode); 
+    puts(temp);
+    return temp;
 }
+stack* stackInit(){
+    stack *st = (stack *) malloc(sizeof(stack));
+    int fd = open(".sh_hist", O_RDONLY);
+    if(fd == -1){
+        return st;
+    }
+    char buf[1024];
+    int wordSize = read(fd,buf,1024);
+    char *tok = (char *)malloc(MAX_SIZE);
+    tok = strtok(buf,"\n");
+    push(st,tok);
+    while(tok){
+        tok = strtok(NULL,"\n");
+        if(tok == NULL || !isascii(tok[0])){
+            break;
+        }
+        // puts(tok);
+        push(st,tok);
+    }
+    return st;
+}
+
 
 // int main(){
 //     stack *s = stackInit();
-//     push(s,"ls");
-//     push(s,"pwd");
-//     push(s,"pwd");
-//     push(s,"pwd");
-
-//     puts(pop(s));
-//     puts(pop(s));
-
+//     while(1){
+//         char * k = pop(s);
+//         if(k){
+//             puts(k);
+//         }
+//         else{
+//             break;
+//         }
+//     }
+//     // printStack(s);
 //     return 0;
 // }
