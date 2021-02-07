@@ -24,7 +24,7 @@ jobList *jobs;
  * @brief Function that generates the prompt to be displayed on the shell.
  * @return Structure that contains the username and the current working directory.
  */
-prompt getPrompt(){
+static prompt getPrompt(){
 	prompt p;
 	getcwd(p.wd,MAX_SIZE);
 	gethostname(p.hostname,MAX_SIZE);
@@ -39,7 +39,7 @@ prompt getPrompt(){
  * @param hostname Hostname of the system.
  * @param cwd Current working directory.
  */
-void printPrompt(prompt p){
+static void printPrompt(prompt p){
 	printf(RED"%s@", p.uname);
 	printf("%s:", p.hostname);
 	printf(BLUE"%s",p.wd);
@@ -51,7 +51,7 @@ void printPrompt(prompt p){
  * @brief Signal handler to set completed background process status as done.
  * 
  */
-void handleChild(){
+static void handleChild(){
 	int status;
 	pid_t childpid = waitpid(-1,&status,WNOHANG);
 	// printf("parent alerted %d\n",childpid);
@@ -66,7 +66,7 @@ void handleChild(){
  * 		  Gives the control of the terminal to the process group id.  
  * 
  */
-void initShell(){
+static void initShell(){
 	// Get default terminal
 	char *term = (char *)malloc(MAX_SIZE);
     ctermid(term);
@@ -97,7 +97,7 @@ void initShell(){
  * @param i Sequence number of the command.
  * @return Process ID of the executed command.
  */
-pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
+static pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
 	pid_t pid = fork();
 	if(pid < 0) {
 		perror("");
@@ -185,7 +185,7 @@ pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
  * 
  * @param cl List of parsed commands.
  */
-void runJob(cmdList *cl){
+static void runJob(cmdList *cl){
 	int size = cl->commandSize;
 	int pid;
 	int isBg = 0;
@@ -251,7 +251,7 @@ void runJob(cmdList *cl){
 *
 * @param p Prompt structure to be printed on the terminal.
 */
-void startShell(prompt p, stack *s){
+static void startShell(prompt p, stack *s){
 	// hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
 	// if(hist == -1){
 	// 	perror("History feature startup failed\n");

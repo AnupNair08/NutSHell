@@ -33,7 +33,7 @@ jobList *initJobList(){
  * @param statusCode One of the five possible status code.
  * @return String decoded with the status code. 
  */
-char *getStatus(int statusCode){
+static char *getStatus(int statusCode){
 	switch (statusCode)
 	{
 	case 1:
@@ -63,7 +63,7 @@ char *getStatus(int statusCode){
  * @param pid Process id. 
  * @return String name of the process.
  */
-char *getProcName(pid_t pid) {
+static char *getProcName(pid_t pid) {
 	char *name = (char *)malloc(MAX_SIZE);
 	char procfile[MAX_SIZE];
 	sprintf(procfile, "/proc/%d/cmdline", pid);
@@ -191,7 +191,7 @@ int deleteJob(jobList *jobs, int jobId){
 	return 1;
 }
 
-void checkzombie(jobList *jobs,int pid){
+static void checkzombie(jobList *jobs,int pid){
 	int status;
 	pid_t rpid = waitpid(pid, &status, WNOHANG);
 	if(rpid == pid){
@@ -239,7 +239,7 @@ int freeJobs(jobList *jobs){
  * @param j Job to be handled.
  * @param fd File descriptor of the terminal process.
  */
-void waitProcess(jobList *jobs,job j, int fd){
+static void waitProcess(jobList *jobs,job j, int fd){
 	int status;
 	puts(getProcName(j.pid));
 	if(j.status == DONE) return;

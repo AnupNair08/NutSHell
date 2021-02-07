@@ -55,7 +55,7 @@ int printParsed(cmdList *cl){
  * @param s Input token/
  * @return Processed string. 
  */
-char *removeQt(char *s){
+static char *removeQt(char *s){
     char *temp = (char *)malloc(strlen(s));
     int k = 0;
     for(int i = 0 ; i < strlen(s) ; i++){
@@ -72,7 +72,7 @@ char *removeQt(char *s){
  * 
  * @return Pointer to the initialised command list.
  */
-cmdList *init(cmdList *cl){
+static cmdList *init(cmdList *cl){
     for(int i = 0 ; i < 64 ;i++){
         cl->commandList[i].infile = NULL;
         cl->commandList[i].outfile = NULL;
@@ -87,7 +87,7 @@ cmdList *init(cmdList *cl){
  * 
  * @param cmd String that is to be parsed.
  */
-void parseOne(char *cmd){
+static void parseOne(char *cmd){
     command *c = (command *)malloc(sizeof(command));
     
     c->isBackground = 0;
@@ -159,7 +159,7 @@ void parseOne(char *cmd){
  * @param end Ending index of the string.
  * @return Tokens based on special operators. 
  */
-char* parse(char *cmd, int start, int end){
+static char* parse(char *cmd, int start, int end){
     static int j = 0;
 	int index = start;
 	for(int i = start ; i < end; i++) {
@@ -195,7 +195,7 @@ char* parse(char *cmd, int start, int end){
  * @param s Array of special operators.
  * @param ssize Size of special operators array.
  */
-void removeFiles(command *c,int csize, char *s, int ssize){
+static void removeFiles(command *c,int csize, char *s, int ssize){
     int j;
     for(int i = 0 ; i < ssize ;i++){
         if(s[i] == '>' || s[i] == '<'){
@@ -217,7 +217,7 @@ void removeFiles(command *c,int csize, char *s, int ssize){
  * @param s Array of special operators.
  * @param ssize Size of special operators array.
  */
-void interpret(command *c, int csize, char *s, int ssize){
+static void interpret(command *c, int csize, char *s, int ssize){
     for(int i = 0 ; i < ssize ;i++){
         if(i+1 < ssize && spcOps[i] == '<' && spcOps[i+1] == '>') {
             c[i].infile = c[i+1].cmd;
