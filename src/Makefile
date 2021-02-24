@@ -3,7 +3,7 @@
 #	--> utility.c	  invoked via  utility.h
 
 dnsh: shell.o  command.o jobs.o stack.o 
-	gcc shell.o command.o jobs.o stack.o -ggdb3 -o dnsh
+	gcc  shell.o command.o jobs.o stack.o -g -o dnsh
 
 jobs.o: jobs.c shell.h
 	gcc -c jobs.c

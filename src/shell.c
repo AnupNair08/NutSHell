@@ -9,20 +9,22 @@
 #include<signal.h>
 #include "shell.h"
 
-/// @brief Global pointer to store the current working directory
-char *cwd;
 int hist;
+/// @brief Global pointer to store the current working directory.
+char *cwd;
+/// @brief File descriptor to store the context of current terminal.
 int terminalFd;
+/// @brief Prompt that is displayed on the terminal.
 prompt p;
-/// @brief List to store the jobs for processing bg and fg operations
+/// @brief List to store the jobs for processing bg and fg operations.
 jobList *jobs;
 
-int pipefd[2];
 
-///
-///  @brief Function that generates the prompt to be displayed on the shell
-///  @return Structure that contains the username and the current working directory
-prompt getPrompt(){
+/**
+ * @brief Function that generates the prompt to be displayed on the shell.
+ * @return Structure that contains the username and the current working directory.
+ */
+static prompt getPrompt(){
 	prompt p;
 	getcwd(p.wd,MAX_SIZE);
 	gethostname(p.hostname,MAX_SIZE);
@@ -30,15 +32,14 @@ prompt getPrompt(){
 	return p;
 }
 
-
 /**
- * @brief Utility function to print colored text on terminal
+ * @brief Utility function to print colored text on terminal.
  * 
- * @param name Username of the system
- * @param hostname Hostname of the system
- * @param cwd Current working directory
+ * @param name Username of the system.
+ * @param hostname Hostname of the system.
+ * @param cwd Current working directory.
  */
-void printPrompt(prompt p){
+static void printPrompt(prompt p){
 	printf(RED"%s@", p.uname);
 	printf("%s:", p.hostname);
 	printf(BLUE"%s",p.wd);
@@ -46,12 +47,11 @@ void printPrompt(prompt p){
 	return;
 }
 
-
 /**
  * @brief Signal handler to set completed background process status as done.
  * 
  */
-void handleChild(){
+static void handleChild(){
 	int status;
 	pid_t childpid = waitpid(-1,&status,WNOHANG);
 	// printf("parent alerted %d\n",childpid);
@@ -60,18 +60,13 @@ void handleChild(){
 	return;
 }
 
-void handleStop(){
-	printPrompt(p);
-	return;
-}
-
 /**
  * @brief Initialises the shell and makes it run as foreground process.
- *  	  Gets process id of the shell and sets the process group id equal to it
- * 		  Gives the control of the terminal to the process group id  
+ *  	  Gets process id of the shell and sets the process group id equal to it.
+ * 		  Gives the control of the terminal to the process group id.  
  * 
  */
-void initShell(){
+static void initShell(){
 	// Get default terminal
 	char *term = (char *)malloc(MAX_SIZE);
     ctermid(term);
@@ -93,27 +88,20 @@ void initShell(){
 	return;
 }
 
-void freeCommandList(command *c, int size){
-	for(int j = 0; j < size; j++){
-		for(int i = 0 ; i < c[j].size; i++){
-			free(c[j].args[i]);
-		}
-		free(c->cmd);
-	}
-	printf("Freed");
-	return;
-}
-
 /**
- * @brief Function to execute a single command 
+ * @brief Command to be executed.
  * 
- * @param cl Pointer to the command list
+ * @param p Pointer to the structure of the command.
+ * @param cmdSize Number of commands in the group.
+ * @param pipefd Array of input and output files for the command.
+ * @param i Sequence number of the command.
+ * @return Process ID of the executed command.
  */
-void runCmd(command *p, cmdList *cl){
+static pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
 	pid_t pid = fork();
 	if(pid < 0) {
 		perror("");
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	if(pid == 0){  
 		// Get the child's process id and make it the group leader if there is none
@@ -145,112 +133,125 @@ void runCmd(command *p, cmdList *cl){
 		}
 		arg[p->size + 1] = 0;
 		
-		if(p->pipein == 1 && p->pipeout == 1){
-			close(pipefd[1]);
-			dup2(pipefd[0],0);
-			close(pipefd[0]);
-			
-			if(pipe(pipefd) == -1){
+
+		// All but the first process should have stdin as op of prev proc
+		if(i != 0){
+			if(dup2(pipefd[0],0) < 0){
 				perror("");
-			};
-			close(pipefd[0]);
-			dup2(pipefd[1],1);
-			close(pipefd[1]);
+				exit(EXIT_FAILURE);
+			}
 		}
-		else if(p->pipeout){
-			close(pipefd[0]);
-			dup2(pipefd[1],1);
-		}
-		else if(p->pipein){
-			close(pipefd[1]);
-			dup2(pipefd[0],0);
+		// All but the last process should output to the stdout
+		if(i != cmdSize - 1){
+			if(dup2(pipefd[1],1) < 0){
+				perror("");
+				exit(EXIT_FAILURE);
+			}
 		}
 
-
+		// If there is an input file
 		if(p->infile){
 			int fd = open(p->infile, O_RDONLY);
-			if(fd == -1){
+			if(fd == -1 || dup2(fd,0) < 0){
 				perror("");
-				return;
+				return -1;
 			}
-			dup2(fd,0);
 			close(fd);
 		}
+		// If there is an output file
 		if(p->outfile){
 			int fd2 = open(p->outfile, O_CREAT | O_RDWR);
-			if(fd2 == -1){
+			if(fd2 == -1 || dup2(fd2,1) < 0){
 				perror("");
-				return;
+				return -1;
 			}
-			dup2(fd2,1);
 			close(fd2);
 		}
 
 		if(execvp(p->cmd,arg) == -1){
 			perror("");
 			// Including this exit cleanly exits out of a process that ended up in an error, thus not causing the exit loops
-			exit(-1);
+			exit(EXIT_FAILURE);
 		}
 	}
-	else{
-		int status;
-		if (p->isBackground){
-			// Run background processes with WNOHANG as it does not wait for the child process to exit
-			addJob(jobs,pid,cl,BACKGROUND);
-			waitpid(pid,&status, WNOHANG) ;
-		}
-		else{
-			addJob(jobs,pid,cl,FOREGROUND);
-			waitpid(pid,&status,WUNTRACED);
 
-			if(WIFSTOPPED(status)){
-				setStatus(jobs,pid,STOPPED);
-				tcsetpgrp(terminalFd,getpid());
-			}
-			else if (WIFEXITED(status)){
-				setStatus(jobs,pid,DONE);
-				tcsetpgrp(terminalFd,getpid());
-			}
-			else{
-				setStatus(jobs,pid,DONE);
-				tcsetpgrp(terminalFd,getpid());
-			}
-		}
-	}
-	return;
+	// freeCommandList(p);
+	// free(p->args); 
+	return pid;
 }
 
-
-void runJob(cmdList *cl){
+/**
+ * @brief Runs the parsed set of commands that are in the form of a process group.
+ * 
+ * @param cl List of parsed commands.
+ */
+static void runJob(cmdList *cl){
 	int size = cl->commandSize;
+	int pid;
+	int isBg = 0;
+	int pipeArray[size -1][2];
+	int temp[2] = {0,1};
+	
+	for(int i = 0 ; i < size - 1;i++){
+		pipe(pipeArray[i]);
+	}
+	
 	for(int i = 0 ; i < size; i++){
-		// printCommand((cl->commandList[i]));
+
+		if(cl->commandList[i].isBackground) isBg = 1;
+		
 		if(cl->commandList[i].pipein == 1 && cl->commandList[i].pipeout == 1){
-			runCmd(&(cl->commandList[i]), cl);
+			int temp[2] = {pipeArray[i-1][0], pipeArray[i][1]} ;
+			pid = runCmd(&(cl->commandList[i]), cl->commandSize, temp,i);
+			close(pipeArray[i][1]);
 			continue;
 		}
 		if(cl->commandList[i].pipeout){
-			pipe(pipefd);
-			runCmd(&(cl->commandList[i]), cl);
-			close(pipefd[1]);
+			pid = runCmd(&(cl->commandList[i]), cl->commandSize, pipeArray[i],i);
+			close(pipeArray[i][1]);
 		}
 		if(cl->commandList[i].pipein){
-			runCmd(&(cl->commandList[i]), cl);
-			close(pipefd[0]);
+			pid = runCmd(&(cl->commandList[i]), cl->commandSize,pipeArray[i-1],i);
+			close(pipeArray[i][0]);
 		}
 		if(cl->commandList[i].pipein == 0 && cl->commandList[i].pipeout == 0){
-			runCmd(&(cl->commandList[i]), cl);
+			pid = runCmd(&(cl->commandList[i]), cl->commandSize,temp,i);
+		}
+	}
+	if(pid < 0){
+		exit(EXIT_FAILURE);
+	}
+	int status;
+	if (isBg){
+		// Run background processes with WNOHANG as it does not wait for the child process to exit
+		addJob(jobs,pid,cl,BACKGROUND);
+		waitpid(pid,&status, WNOHANG) ;
+	}
+	else{
+		addJob(jobs,pid,cl,FOREGROUND);
+		waitpid(pid,&status,WUNTRACED);
+
+		if(WIFSTOPPED(status)){
+			setStatus(jobs,pid,STOPPED);
+			tcsetpgrp(terminalFd,getpid());
+		}
+		else if (WIFEXITED(status)){
+			setStatus(jobs,pid,DONE);
+			tcsetpgrp(terminalFd,getpid());
+		}
+		else{
+			setStatus(jobs,pid,DONE);
+			tcsetpgrp(terminalFd,getpid());
 		}
 	}
 }
 
-
-/// 
-/// @brief Function to run the shell loop that forks new processes and invokes the exec system call to execute commands
-///
-/// @param p Prompt structure to be printed on the terminal
-///
-void startShell(prompt p, stack *s){
+/** 
+* @brief Function to run the shell loop that forks new processes and invokes the exec system call to execute commands.
+*
+* @param p Prompt structure to be printed on the terminal.
+*/
+static void startShell(prompt p, stack *s){
 	// hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
 	// if(hist == -1){
 	// 	perror("History feature startup failed\n");
@@ -263,28 +264,22 @@ void startShell(prompt p, stack *s){
 		strcpy(p.wd,cwd);
 	  	printPrompt(p);
 		fgets(cmd,MAX_SIZE,stdin);
-		
 		// Bad input handler
 		if(cmd == NULL || strlen(cmd) == 0 || strcmp(cmd,"\n") == 0){
 			continue;	
 		}
 
-		// History WIP	
-		// char *buf;
 		// if(strcmp(cmd,"!!\n") == 0){
-		// 	// buf = handleArrowUp(h);
-		// 	buf = pop(s);
-		// 	if(buf == NULL || strcmp(buf,"") == 0){
-		// 		fprintf(stderr,"No history stored\n");
-		// 		continue;
-		// 	}
-		// 	cmd = buf;
-		// 	printPrompt(p);
-		// 	// printf("%s", cmd);
+		// 	// printStack(s);
+		// 	// k = pop(s);
+		// 	// if(k) puts(k);
+		// 	// else puts("No history stored");
+		// 	continue;
 		// }
 		// else{
-		// 	write(hist,cmd,strlen(cmd));
 		// 	push(s,cmd);
+		// 	// printStack(s);
+		// 	write(hist,cmd,strlen(cmd));
 		// }
 
 		parsedCmd = getParsed(strtok(cmd,"\n"));
@@ -302,7 +297,7 @@ void startShell(prompt p, stack *s){
 					free(jobs);
 					free(cmd);
 					puts("Exiting...");
-					exit(0);
+					exit(EXIT_SUCCESS);
 				}
 				else if (strcmp(temp->cmd,"help") == 0) {
 					printf("Help from the shell\n");
@@ -388,7 +383,7 @@ int main(int argc, char *argv[]){
 	printf("Welcome to Dead Never SHell(DNSh).\n");
 	p = getPrompt();
 	stack *s = stackInit();
-	startShell(p, s);
+	startShell(p,s);
 	return 0;
 }
 
