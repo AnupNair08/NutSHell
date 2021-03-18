@@ -98,7 +98,7 @@ static void initShell(){
  * @return Process ID of the executed command.
  */
 static pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
-	pid_t pid = fork();
+	pid_t pid = vfork();
 	if(pid < 0) {
 		perror("");
 		exit(EXIT_FAILURE);
@@ -251,11 +251,7 @@ static void runJob(cmdList *cl){
 *
 * @param p Prompt structure to be printed on the terminal.
 */
-static void startShell(prompt p, stack *s){
-	// hist = open(".sh_hist", O_CREAT | O_APPEND | O_RDWR);
-	// if(hist == -1){
-	// 	perror("History feature startup failed\n");
-	// }
+static void startShell(prompt p){
 	cwd = p.wd;
 	int pid;
 	cmdList *parsedCmd = NULL;
@@ -268,19 +264,6 @@ static void startShell(prompt p, stack *s){
 		if(cmd == NULL || strlen(cmd) == 0 || strcmp(cmd,"\n") == 0){
 			continue;	
 		}
-
-		// if(strcmp(cmd,"!!\n") == 0){
-		// 	// printStack(s);
-		// 	// k = pop(s);
-		// 	// if(k) puts(k);
-		// 	// else puts("No history stored");
-		// 	continue;
-		// }
-		// else{
-		// 	push(s,cmd);
-		// 	// printStack(s);
-		// 	write(hist,cmd,strlen(cmd));
-		// }
 
 		parsedCmd = getParsed(strtok(cmd,"\n"));
 		if(parsedCmd == NULL || parsedCmd->tokenSize != parsedCmd->opSize + 1){
@@ -382,8 +365,7 @@ int main(int argc, char *argv[]){
 	jobs = initJobList();
 	printf("Welcome to Dead Never SHell(DNSh).\n");
 	p = getPrompt();
-	stack *s = stackInit();
-	startShell(p,s);
+	startShell(p);
 	return 0;
 }
 
