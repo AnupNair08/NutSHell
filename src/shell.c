@@ -277,8 +277,9 @@ static void startShell(prompt p){
 				if (strcmp(temp->cmd,"exit") == 0) {
 				//	printf("I will be Bourne Again.\n");
 					close(terminalFd);
-					free(jobs);
 					free(cmd);
+					free(jobs);
+					free(parsedCmd);
 					puts("Exiting...");
 					exit(EXIT_SUCCESS);
 				}
@@ -286,11 +287,8 @@ static void startShell(prompt p){
 					printf("Help from the shell\n");
 				}
 				else if (strcmp(temp->cmd,"cd") == 0) {
-					if(temp->args[0] == NULL){
-						temp->args[0] = (char *)malloc(sizeof(char) * MAX_SIZE);
-						temp->args[0] = getenv("HOME");
-					}
-					if (chdir(temp->args[0]) == 0){
+					char *directory = temp->args[0] == NULL ? getenv("HOME") : temp->args[0];
+					if (chdir(directory) == 0){
 						getcwd(cwd, MAX_SIZE);
 						if(!temp->args[0]) free(temp->args[0]);
 					}
@@ -343,7 +341,6 @@ static void startShell(prompt p){
 		} 
 		
 	}
-	free(cmd);
 	return;
 }
 

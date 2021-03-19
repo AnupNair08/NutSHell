@@ -18,6 +18,7 @@ int spcSize;
 /// @brief Token size for input by user.
 int tokenSize;
 
+#ifdef DEV
 /**
  * @brief Utility function to print the command.
  * 
@@ -48,6 +49,7 @@ int printParsed(cmdList *cl){
     }
     return commandSize;
 }
+#endif
 
 /**
  * @brief Helper function to process quoted text.

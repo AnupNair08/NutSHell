@@ -64,7 +64,7 @@ static char *getStatus(int statusCode){
  * @return String name of the process.
  */
 static char *getProcName(pid_t pid) {
-	char *name = (char *)malloc(MAX_SIZE);
+	static char name[16];
 	char procfile[MAX_SIZE];
 	sprintf(procfile, "/proc/%d/cmdline", pid);
 	int fd = open(procfile, O_RDONLY);
@@ -290,6 +290,7 @@ void bringFg(jobList *jobs, int id, int type){
 	if(id == -1){
 		waitProcess(jobs,jobs->jl[0],fd);
 		close(fd);
+		free(term);
 		return;
 	}
 	for(int i = 0 ; i < jobs->size; i++){
@@ -306,6 +307,7 @@ void bringFg(jobList *jobs, int id, int type){
 	}
 	printf("No such job\n");
 	close(fd);
+	free(term);
 	return;
 }
 
@@ -330,6 +332,7 @@ void sendBg(jobList *jobs, int id, int type){
 				setStatus(jobs,jobs->jl[0].pid,BACKGROUND);
 		}
 		waitpid(pid, &status, WNOHANG);
+		free(term);
 		return;
 	}
 	for(int i = 0 ; i < jobs->size; i++){
@@ -350,5 +353,6 @@ void sendBg(jobList *jobs, int id, int type){
 	}
 	printf("No such job\n");
 	close(fd);
+	free(term);
 	return;
 }
