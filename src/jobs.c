@@ -287,6 +287,11 @@ void bringFg(jobList *jobs, int id, int type){
     int fd = open(term,O_RDONLY);
 	int flag = type == JOBID ? 1 : 0;
 	int status, pid;
+	if(id == -1){
+		waitProcess(jobs,jobs->jl[0],fd);
+		close(fd);
+		return;
+	}
 	for(int i = 0 ; i < jobs->size; i++){
 			if(flag && jobs->jl[i].jobid == id){
 				waitProcess(jobs,jobs->jl[i],fd);
@@ -318,6 +323,15 @@ void sendBg(jobList *jobs, int id, int type){
 	int flag = type == JOBID ? 1 : 0;
 	pid_t pid;
 	int status;
+	if(id == -1){
+		pid = jobs->jl[0].pid;
+		if(jobs->jl[0].status == STOPPED){
+				kill(pid, SIGCONT);
+				setStatus(jobs,jobs->jl[0].pid,BACKGROUND);
+		}
+		waitpid(pid, &status, WNOHANG);
+		return;
+	}
 	for(int i = 0 ; i < jobs->size; i++){
 		pid = jobs->jl[i].pid;
 		if(flag){
@@ -326,7 +340,6 @@ void sendBg(jobList *jobs, int id, int type){
 				setStatus(jobs,jobs->jl[i].pid,BACKGROUND);
 			}
 			waitpid(pid, &status, WNOHANG);
-			
 		}
 		else{
 			if(jobs->jl[i].pid == id && jobs->jl[i].status == STOPPED){

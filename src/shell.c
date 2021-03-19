@@ -298,28 +298,16 @@ static void startShell(prompt p){
 						perror("");
 					}
 				}
-				else if (strcmp(temp->cmd,"history") == 0){
-					printf("Shell History:\n");
-					int fd = open(".sh_hist", O_RDONLY);
-					struct stat s;
-					stat(".sh_hist",&s);
-					char *buf = (char *)malloc(sizeof(char)*s.st_size);
-					read(fd,buf,s.st_size);
-					printf("%s", buf);
-					free(buf);
-					close(fd);				
-				}
 				else if (strcmp(temp->cmd,"jobs") == 0){
 					printJobs(jobs);
 				}
 				else if (strcmp(temp->cmd,"fg") == 0){
 					char *id = temp->args[0];
 					if(id == NULL){
-						printf("Usage: <fg [%%]id>\n");
-						continue;
+						bringFg(jobs,-1,JOBID);
 					}
 					//call by jobID
-					if(id[0] == '%'){
+					else if(id[0] == '%'){
 						bringFg(jobs, atoi(id+1),JOBID);
 					}
 					//call by process ID
@@ -330,11 +318,10 @@ static void startShell(prompt p){
 				else if (strcmp(temp->cmd,"bg") == 0){
 					char *id = temp->args[0];
 					if(id == NULL){
-						printf("Usage: <bg [%%]id>\n");
-						continue;
+						sendBg(jobs,-1,JOBID);
 					}
 					//call by jobID
-					if(id[0] == '%'){
+					else if(id[0] == '%'){
 						sendBg(jobs, atoi(id+1),JOBID);
 					}
 					//call by process ID
@@ -356,14 +343,14 @@ static void startShell(prompt p){
 		} 
 		
 	}
-	
+	free(cmd);
 	return;
 }
 
 int main(int argc, char *argv[]){
 	initShell();
 	jobs = initJobList();
-	printf("Welcome to Dead Never SHell(DNSh).\n");
+	printf("Welcome to NutSHell(NSh).\n");
 	p = getPrompt();
 	startShell(p);
 	return 0;
