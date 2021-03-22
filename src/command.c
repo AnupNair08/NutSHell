@@ -149,7 +149,6 @@ static void parseOne(char *cmd){
 	commandList[commandSize++] = *c;
     free(tok);
     free(temp);
-    free(c);
     return ;
 }
 

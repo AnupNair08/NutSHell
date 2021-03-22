@@ -16,7 +16,7 @@ init:
 	@mv jobs.o $(BIN_DIR)
 
 	$(CC)  $(BIN_DIR)shell.o $(BIN_DIR)command.o $(BIN_DIR)jobs.o -g -Wall -o nsh
-	@mv nsh $(BIN_DIR)
+	@./nsh
 
 jobs.o: $(SRC_DIR)jobs.c $(SRC_DIR)shell.h
 	$(CC) $(IPATH) -c $(SRC_DIR)jobs.c
@@ -36,6 +36,7 @@ nsh: $(BIN_DIR)shell.o  $(BIN_DIR)command.o $(BIN_DIR)jobs.o
 
 run:
 	@make
+	@mv nsh $(BIN_DIR)
 	@echo Starting Shell
 	@src/bin/nsh
 
