@@ -36,9 +36,6 @@ nsh: $(BIN_DIR)shell.o  $(BIN_DIR)command.o $(BIN_DIR)jobs.o
 
 run:
 	@make
-	@mv nsh $(BIN_DIR)
-	@echo Starting Shell
-	@src/bin/nsh
 
 clean:
 	@rm $(BIN_DIR)*.o $(BIN_DIR)nsh > /dev/null 2>&1

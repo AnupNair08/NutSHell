@@ -18,7 +18,7 @@ int terminalFd;
 prompt p;
 /// @brief List to store the jobs for processing bg and fg operations.
 jobList *jobs;
-
+pid_t groupLeader;
 
 /**
  * @brief Function that generates the prompt to be displayed on the shell.
@@ -88,6 +88,17 @@ static void initShell(){
 	return;
 }
 
+void handleSigint(){
+	kill(groupLeader,SIGINT);
+	return;
+}
+
+void handleSigstp(){
+	printf("Leader called %d",groupLeader);
+	kill(groupLeader,SIGTSTP);
+	return;
+}
+
 /**
  * @brief Command to be executed.
  * 
@@ -99,6 +110,7 @@ static void initShell(){
  */
 static pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
 	pid_t pid = vfork();
+	pid_t shellpid = getppid();
 	if(pid < 0) {
 		perror("");
 		exit(EXIT_FAILURE);
@@ -107,17 +119,18 @@ static pid_t runCmd(command *p, int cmdSize, int pipefd[2], int i){
 		// Get the child's process id and make it the group leader if there is none
 		int childpid = getpid();
 		int pgid = getpgid(childpid);
-		
+		// printf("%d %d\n",shellpid,pgid);
 		if (pgid == 0){
 			setpgid(childpid,childpid);
+			groupLeader = childpid;
 		}
 		else{
 			setpgid(childpid,pgid);
 		}
 		
 		// Takes signals from the terminal for child processes
-		signal (SIGINT, SIG_DFL);
-		signal (SIGTSTP, SIG_DFL);
+		signal (SIGINT, handleSigint);
+		signal (SIGTSTP, handleSigstp);
 		signal (SIGTTOU, SIG_DFL);
 		signal (SIGCHLD, SIG_DFL);
 		signal (SIGTTOU, SIG_IGN);
@@ -191,7 +204,8 @@ static void runJob(cmdList *cl){
 	int isBg = 0;
 	int pipeArray[size -1][2];
 	int temp[2] = {0,1};
-	
+	int grpLd;
+
 	for(int i = 0 ; i < size - 1;i++){
 		pipe(pipeArray[i]);
 	}
@@ -217,6 +231,7 @@ static void runJob(cmdList *cl){
 		if(cl->commandList[i].pipein == 0 && cl->commandList[i].pipeout == 0){
 			pid = runCmd(&(cl->commandList[i]), cl->commandSize,temp,i);
 		}
+		if(i == 0) grpLd = pid;
 	}
 	if(pid < 0){
 		exit(EXIT_FAILURE);
@@ -224,8 +239,9 @@ static void runJob(cmdList *cl){
 	int status;
 	if (isBg){
 		// Run background processes with WNOHANG as it does not wait for the child process to exit
+		printf("%d\n",grpLd);
 		addJob(jobs,pid,cl,BACKGROUND);
-		waitpid(pid,&status, WNOHANG) ;
+		waitpid(grpLd,&status, WNOHANG) ;
 	}
 	else{
 		addJob(jobs,pid,cl,FOREGROUND);
